@@ -176,8 +176,8 @@ export class EventSourceController {
         this._abortController = controller ?? new AbortController();
     }
 
-    abort() {
-        this._abortController.abort();
+    abort(reason?: string) {
+        this._abortController.abort(reason);
     }
 
     get signal() {
