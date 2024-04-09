@@ -221,27 +221,28 @@ export interface EventSourceHooks {
     /**
      * Fires when a new request has been created.
      */
-    onRequest?: (context: FetchContext<unknown, "stream">) => any;
+    onRequest?: (context: OnRequestContext) => any;
     /**
      * Fires when a there was an error sending a request
      */
-    onRequestError?: (
-        context: FetchContext<unknown, "stream"> & { error: Error },
-    ) => any;
+    onRequestError?: (context: OnRequestErrorContext) => any;
     /**
      * Fires when receiving a response from the server
      */
-    onResponse?: (
-        context: FetchContext<any, "stream"> & {
-            response: FetchResponse<"stream">;
-        },
-    ) => any;
+    onResponse?: (context: OnResponseContext) => any;
     /**
      * Fires when the server has returned an error status code or the server doesn't return the expected content-type ("text/event-stream")
      */
-    onResponseError?: (
-        context: FetchContext<any, "stream"> & {
-            response: FetchResponse<"stream">;
-        },
-    ) => any;
+    onResponseError?: (context: OnResponseErrorContext) => any;
 }
+
+export type OnRequestContext = FetchContext<unknown, "stream">;
+export type OnRequestErrorContext = FetchContext<unknown, "stream"> & {
+    error: Error;
+};
+export type OnResponseContext = FetchContext<unknown, "stream"> & {
+    response: FetchResponse<"stream">;
+};
+export type OnResponseErrorContext = FetchContext<any, "stream"> & {
+    response: FetchResponse<"stream">;
+};
