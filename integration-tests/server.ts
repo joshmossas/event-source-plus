@@ -1,10 +1,13 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 import {
     createApp,
     createError,
     createEventStream,
     createRouter,
     eventHandler,
+    getHeader,
     readBody,
+    setResponseHeader,
     setResponseStatus,
 } from "h3";
 
@@ -16,6 +19,7 @@ router.head(
     "/",
     eventHandler((event) => {
         setResponseStatus(event, 200);
+        setResponseHeader(event, "Content-Type", "text/plain");
         return "";
     }),
 );
@@ -71,6 +75,39 @@ router.get(
         let msgCount = 0;
         const interval = setInterval(async () => {
             await stream.push('{"message":"hello world"}');
+            msgCount++;
+            if (msgCount >= 10) {
+                await stream.close();
+            }
+        });
+        stream.onClosed(() => {
+            clearInterval(interval);
+        });
+    }),
+);
+
+const expiredTokens: Record<string, boolean> = {};
+
+router.delete(
+    "/sse-invalidate-headers",
+    eventHandler((event) => {
+        const token = getHeader(event, "Authorization") ?? "";
+        if (expiredTokens[token] === true) {
+            throw createError({
+                statusCode: 403,
+                statusMessage: "Token has expired",
+            });
+        }
+        expiredTokens[token] = true;
+        const stream = createEventStream(event);
+        void stream.send();
+        let msgCount = 0;
+        const interval = setInterval(async () => {
+            await stream.push(
+                JSON.stringify({
+                    message: "hello world",
+                }),
+            );
             msgCount++;
             if (msgCount >= 10) {
                 await stream.close();
