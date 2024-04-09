@@ -40,7 +40,7 @@ export class EventSourcePlus {
 
     private async _handleRetry(
         controller: EventSourceController,
-        options: ListenOptions,
+        hooks: EventSourceHooks,
     ) {
         this.retryCount++;
         if (
@@ -58,14 +58,14 @@ export class EventSourcePlus {
             }
         }
         await wait(this.retryInterval);
-        controller.__abortController.abort();
-        controller.__abortController = new AbortController();
-        await this._handleConnection(controller, options);
+        controller._abortController.abort();
+        controller._abortController = new AbortController();
+        await this._handleConnection(controller, hooks);
     }
 
     private async _handleConnection(
         controller: EventSourceController,
-        options: ListenOptions,
+        hooks: EventSourceHooks,
     ): Promise<void> {
         const headers = this.options.headers ?? {};
         if (typeof headers.accept !== "string") {
@@ -85,12 +85,12 @@ export class EventSourcePlus {
             headers,
             signal: controller.signal,
             retry: false,
-            onRequest: options.onRequest,
-            onRequestError: options.onRequestError,
+            onRequest: hooks.onRequest,
+            onRequestError: hooks.onRequestError,
             onResponse: async (context) => {
-                if (typeof options.onResponse === "function") {
+                if (typeof hooks.onResponse === "function") {
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                    await options.onResponse(context as any);
+                    await hooks.onResponse(context as any);
                 }
                 const contentType =
                     context.response.headers.get("Content-Type");
@@ -102,17 +102,17 @@ export class EventSourcePlus {
                         `Expected server to response with Content-Type: '${EventStreamContentType}'. Got '${contentType}'`,
                     );
                     context.error = error;
-                    if (typeof options.onResponseError === "function") {
+                    if (typeof hooks.onResponseError === "function") {
                         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                        options.onResponseError(context as any);
+                        hooks.onResponseError(context as any);
                     }
                     throw error;
                 }
             },
             onResponseError: async (context) => {
-                if (typeof options.onResponseError === "function") {
+                if (typeof hooks.onResponseError === "function") {
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                    await options.onResponseError(context as any);
+                    await hooks.onResponseError(context as any);
                 }
                 if (context.error instanceof Error) {
                     throw context.error;
@@ -139,22 +139,22 @@ export class EventSourcePlus {
                     ) {
                         this.lastEventId = message.id;
                     }
-                    options.onMessage(message);
+                    hooks.onMessage(message);
                 }
             });
         } catch (_) {
             if (controller.signal.aborted) {
                 return;
             }
-            return this._handleRetry(controller, options);
+            return this._handleRetry(controller, hooks);
         }
         if (controller.signal.aborted) {
             return;
         }
-        return this._handleRetry(controller, options);
+        return this._handleRetry(controller, hooks);
     }
 
-    listen(options: ListenOptions): EventSourceController {
+    listen(options: EventSourceHooks): EventSourceController {
         const controller = new EventSourceController(new AbortController());
         void this._handleConnection(controller, options);
         return controller;
@@ -162,18 +162,21 @@ export class EventSourcePlus {
 }
 
 export class EventSourceController {
-    __abortController: AbortController;
+    /**
+     * Do not modify. For internal use.
+     */
+    _abortController: AbortController;
 
     constructor(controller?: AbortController) {
-        this.__abortController = controller ?? new AbortController();
+        this._abortController = controller ?? new AbortController();
     }
 
     abort() {
-        this.__abortController.abort();
+        this._abortController.abort();
     }
 
     get signal() {
-        return this.__abortController.signal;
+        return this._abortController.signal;
     }
 }
 
@@ -204,13 +207,13 @@ export const HTTP_METHOD_VALS = [
 ] as const;
 export type HttpMethod = (typeof HTTP_METHOD_VALS)[number];
 
-export interface ListenOptions {
+export interface EventSourceHooks {
     /**
      * Fires every time a new message is received
      */
     onMessage: (message: SseMessage) => any;
     /**
-     * Fires when a new request has been opened.
+     * Fires when a new request has been created.
      */
     onRequest?: (context: FetchContext<unknown, "stream">) => any;
     /**

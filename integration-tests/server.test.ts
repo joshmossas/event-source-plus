@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { type ListenOptions, EventSourcePlus } from "../src/eventSource";
+import { type EventSourceHooks, EventSourcePlus } from "../src/eventSource";
 import { type FetchContext } from "ofetch";
 import { type SseMessage } from "../src/parse";
 import { randomUUID } from "crypto";
@@ -138,6 +138,30 @@ test("get request 404", async () => {
     expect(resErrorCount > 1).toBe(true);
 });
 
+test("request error(s)", async () => {
+    const eventSource = new EventSourcePlus("asldkfjasdflkjafdslkj");
+    let msgCount = 0;
+    let reqCount = 0;
+    let reqErrorCount = 0;
+    const controller = eventSource.listen({
+        onMessage() {
+            msgCount++;
+        },
+        onRequest() {
+            reqCount++;
+        },
+        onRequestError(context) {
+            reqErrorCount++;
+            console.error(context.error);
+        },
+    });
+    await wait(1000);
+    controller.abort();
+    expect(msgCount).toBe(0);
+    expect(reqCount > 1).toBe(true);
+    expect(reqErrorCount > 1).toBe(true);
+});
+
 test("retry with new headers", { timeout: 5000 }, async () => {
     const usedTokens = [] as string[];
     let authToken = randomUUID();
@@ -153,7 +177,7 @@ test("retry with new headers", { timeout: 5000 }, async () => {
     let msgCount = 0;
     let openCount = 0;
     let errorCount = 0;
-    const options: ListenOptions = {
+    const options: EventSourceHooks = {
         onMessage(message) {
             msgCount++;
         },
