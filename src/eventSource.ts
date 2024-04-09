@@ -67,7 +67,12 @@ export class EventSourcePlus {
         controller: EventSourceController,
         hooks: EventSourceHooks,
     ): Promise<void> {
-        const headers = this.options.headers ?? {};
+        let headers: Record<string, string> = {};
+        if (typeof this.options.headers === "function") {
+            headers = this.options.headers();
+        } else {
+            headers = this.options.headers ?? {};
+        }
         if (typeof headers.accept !== "string") {
             headers.accept = EventStreamContentType;
         }
@@ -180,9 +185,10 @@ export class EventSourceController {
     }
 }
 
-export interface EventSourcePlusOptions extends Omit<RequestInit, "method"> {
+export interface EventSourcePlusOptions
+    extends Omit<RequestInit, "method" | "headers"> {
     method?: HttpMethod;
-    headers?: Record<string, string>;
+    headers?: Record<string, string> | (() => Record<string, string>);
     maxRetryCount?: number;
     /**
      * Max retry wait time in MS.

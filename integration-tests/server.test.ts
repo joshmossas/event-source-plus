@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import { type EventSourceHooks, EventSourcePlus } from "../src/eventSource";
 import { type FetchContext } from "ofetch";
 import { type SseMessage } from "../src/parse";
@@ -161,45 +161,98 @@ test("request error(s)", async () => {
     expect(reqErrorCount > 1).toBe(true);
 });
 
-test("retry with new headers", { timeout: 5000 }, async () => {
-    const usedTokens = [] as string[];
-    let authToken = randomUUID();
-    const eventSource = new EventSourcePlus(
-        `${baseUrl}/sse-invalidate-headers`,
-        {
-            method: "delete",
-            headers: {
-                Authorization: authToken,
+describe("retry with new headers", () => {
+    test("using function syntax", async () => {
+        const getHeaders = () => ({
+            Authorization: randomUUID(),
+        });
+        const eventSource = new EventSourcePlus(
+            `${baseUrl}/sse-invalidate-headers`,
+            { method: "delete", headers: getHeaders },
+        );
+        let msgCount = 0;
+        let reqCount = 0;
+        let reqErrorCount = 0;
+        let resCount = 0;
+        let resErrorCount = 0;
+        const controller = eventSource.listen({
+            onMessage() {
+                msgCount++;
             },
-        },
-    );
-    let msgCount = 0;
-    let openCount = 0;
-    let errorCount = 0;
-    const options: EventSourceHooks = {
-        onMessage(message) {
-            msgCount++;
-        },
-        onRequest(_) {
-            usedTokens.push(authToken);
-            openCount++;
-        },
-        onResponseError(context) {
-            errorCount++;
-            if (context.response.status === 403) {
-                controller.abort();
-                authToken = randomUUID();
-                controller = eventSource.listen(options);
-            }
-        },
-    };
-    let controller = eventSource.listen(options);
-    await wait(3000);
-    controller.abort();
-    expect(msgCount > 1).toBe(true);
-    expect(openCount > 1).toBe(true);
-    expect(errorCount > 1).toBe(true);
-    expect(usedTokens.length > 1).toBe(true);
+            onRequest() {
+                reqCount++;
+            },
+            onRequestError() {
+                reqErrorCount++;
+            },
+            onResponse() {
+                resCount++;
+            },
+            onResponseError(context) {
+                resErrorCount++;
+                expect(context.response.status).toBe(403);
+            },
+        });
+        await wait(3000);
+        controller.abort();
+        expect(msgCount > 1).toBe(true);
+        expect(reqCount > 1).toBe(true);
+        expect(reqErrorCount).toBe(0);
+        expect(resCount > 1).toBe(true);
+        expect(resErrorCount).toBe(0);
+    });
+    test("using object syntax", { timeout: 5000 }, async () => {
+        const usedTokens = [] as string[];
+        let authToken = randomUUID();
+        const eventSource = new EventSourcePlus(
+            `${baseUrl}/sse-invalidate-headers`,
+            {
+                method: "delete",
+                headers: {
+                    Authorization: authToken,
+                },
+            },
+        );
+        let msgCount = 0;
+        let reqCount = 0;
+        let reqErrorCount = 0;
+        let resCount = 0;
+        let resErrorCount = 0;
+        const options: EventSourceHooks = {
+            onMessage() {
+                msgCount++;
+            },
+            onRequest() {
+                usedTokens.push(authToken);
+                reqCount++;
+            },
+            onRequestError() {
+                reqErrorCount++;
+            },
+            onResponse() {
+                resCount++;
+            },
+            onResponseError(context) {
+                expect(context.response.status).toBe(403);
+                resErrorCount++;
+                if (context.response.status === 403) {
+                    controller.abort();
+                    authToken = randomUUID();
+                    controller = eventSource.listen(options);
+                }
+            },
+        };
+        let controller = eventSource.listen(options);
+        await wait(3000);
+        controller.abort();
+        expect(msgCount > 1).toBe(true);
+        expect(reqCount > 1).toBe(true);
+        expect(reqErrorCount).toBe(0);
+        expect(resCount > 1).toBe(true);
+        expect(reqErrorCount < resCount).toBe(true);
+        expect(resErrorCount > 1).toBe(true);
+        expect(usedTokens.length > 1).toBe(true);
+    });
 });
 
 test("Non-SSE endpoint", async () => {
