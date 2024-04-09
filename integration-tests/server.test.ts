@@ -50,7 +50,7 @@ test("post request", async () => {
     let openCount = 0;
     let messageCount = 0;
     let errorCount = 0;
-    const body = "hello world";
+    const body = '{"message":"hello world"}';
     const eventSource = new EventSourcePlus(`${baseUrl}/sse-post`, {
         method: "post",
         headers: {
@@ -150,15 +150,14 @@ test("request error(s)", async () => {
         onRequest() {
             reqCount++;
         },
-        onRequestError(context) {
+        onRequestError() {
             reqErrorCount++;
-            console.error(context.error);
         },
     });
     await wait(1000);
     controller.abort();
     expect(msgCount).toBe(0);
-    expect(reqCount > 1).toBe(true);
+    expect(reqCount).toBe(reqErrorCount);
     expect(reqErrorCount > 1).toBe(true);
 });
 

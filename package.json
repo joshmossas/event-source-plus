@@ -1,16 +1,27 @@
 {
     "name": "event-source-plus",
-    "version": "1.0.0",
+    "version": "0.0.1",
     "description": "",
     "type": "module",
     "main": "./dist/index.cjs",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.cjs"
+        }
+    },
+    "files": [
+        "dist",
+        "src"
+    ],
     "scripts": {
         "build": "unbuild",
         "lint": "eslint --ext .ts src/ --ext .ts integration-tests/",
         "test": "vitest run ./src --passWithNoTests",
         "start-server": "pnpm listhen ./integration-tests/server.ts --port 2020",
         "integration-test": "start-server-and-test start-server http://localhost:2020 integration-test:execute",
-        "integration-test:execute": "vitest run ./integration-tests --passWithNoTests"
+        "integration-test:execute": "vitest run ./integration-tests --passWithNoTests --coverage.enabled --coverage.include=src"
     },
     "keywords": [],
     "author": "",
@@ -19,6 +30,7 @@
         "@types/node": "^20.12.6",
         "@typescript-eslint/eslint-plugin": "^7.5.0",
         "@typescript-eslint/parser": "^7.5.0",
+        "@vitest/coverage-v8": "^1.4.0",
         "eslint": "^8.57.0",
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-import": "^2.25.2",
