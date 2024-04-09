@@ -8,7 +8,7 @@ The [default browser EventSource API](https://developer.mozilla.org/en-US/docs/W
 -   Send custom headers
 -   Pass data as body or query params
 -   Runs in browsers, NodeJS, and workers
--   Automatic retry with hooks for customizing behavior
+-   Automatic retry with exponential backoff and hooks for customizing behavior
 -   ESM and CommonJS support
 
 ## Table of Contents
@@ -51,7 +51,7 @@ controller.abort();
 
 ### Additional Options
 
-The `EventSourcePlus` allows you to pass additional fetch options such as `method`, `body`, and `headers`.
+The `EventSourcePlus` constructor allows you to pass additional fetch options such as `method`, `body`, and `headers`.
 
 ```ts
 const eventSource = new EventSourcePlus("https://example.com", {
