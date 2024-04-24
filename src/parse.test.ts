@@ -69,4 +69,36 @@ event: data`;
         expect(result.messages).toStrictEqual(expectedResult);
         expect(result.leftoverData).toStrictEqual("event: data");
     });
+
+    test("skip invalid lines", () => {
+        const input = `
+:
+hello world
+hi
+hi
+        
+data: hello world
+
+:
+:
+
+data: hello world
+
+`;
+        const result = messageListFromString(input);
+        expect(result.messages).toStrictEqual([
+            {
+                id: undefined,
+                event: "message",
+                data: "hello world",
+                retry: undefined,
+            },
+            {
+                id: undefined,
+                event: "message",
+                data: "hello world",
+                retry: undefined,
+            },
+        ]);
+    });
 });
