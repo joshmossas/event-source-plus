@@ -23,7 +23,7 @@ The [default browser EventSource API](https://developer.mozilla.org/en-US/docs/W
 
 ## Installation
 
-```
+```bash
 # npm
 npm i event-source-plus
 
