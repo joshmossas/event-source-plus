@@ -8,6 +8,7 @@ The [default browser EventSource API](https://developer.mozilla.org/en-US/docs/W
 -   Send custom headers
 -   Pass data as body or query params
 -   Runs in browsers, NodeJS, and workers
+-   First class typescript support
 -   Automatic retry with exponential backoff and hooks for customizing behavior
 -   ESM and CommonJS support
 
@@ -19,6 +20,16 @@ The [default browser EventSource API](https://developer.mozilla.org/en-US/docs/W
     -   [Additional Options](#additional-options)
     -   [Working with Headers](#working-with-headers)
 -   [Listen Hooks](#listen-hooks)
+
+## Installation
+
+```
+# npm
+npm i event-source-plus
+
+# pnpm
+pnpm i event-source-plus
+```
 
 ## Usage
 
