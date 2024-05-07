@@ -1,6 +1,6 @@
 {
-  "tabWidth": 4,
-  "endOfLine": "lf",
-  "useTabs": false,
-  "trailingComma": "all"
+    "tabWidth": 4,
+    "endOfLine": "lf",
+    "useTabs": false,
+    "trailingComma": "all"
 }

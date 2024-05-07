@@ -23,6 +23,7 @@ The [default browser EventSource API](https://developer.mozilla.org/en-US/docs/W
     -   [Working with Headers](#working-with-headers)
     -   [Customizing Retry Behavior](#customizing-retry-behavior)
 -   [Listen Hooks](#listen-hooks)
+-   [Contributing](#contributing)
 
 ## Installation
 
@@ -220,3 +221,18 @@ eventSource.listen({
     },
 });
 ```
+
+## Contributing
+
+Pull requests and issue reports are welcome.
+
+Before submitting a PR please ensure that you have run the following commands and there are no errors.
+
+```bash
+pnpm run lint
+pnpm run format
+```
+
+(For VSCode users "formatOnSave" is set to true. So the formatting step may be unnecessary)
+
+Integration tests and unit tests get run by CI.

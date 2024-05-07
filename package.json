@@ -24,6 +24,7 @@
         "lint": "eslint --ext .ts src/ --ext .ts integration-tests/",
         "test": "vitest run ./src --passWithNoTests",
         "start-server": "pnpm listhen ./integration-tests/server.ts --port 2020",
+        "format": "pnpm prettier --write ./src ./integration-tests ./.github .eslintrc.cjs .prettierrc build.config.ts package.json pnpm-lock.yaml README.md tsconfig.json ./.vscode",
         "integration-test": "start-server-and-test start-server http://localhost:2020 integration-test:execute",
         "integration-test:execute": "vitest run ./integration-tests --passWithNoTests --coverage.enabled --coverage.include=src"
     },

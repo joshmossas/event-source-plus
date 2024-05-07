@@ -1,3 +1,8 @@
 {
-    "cSpell.words": ["ofetch"]
+    "cSpell.words": ["joshmossas", "listhen", "ofetch", "Sosso"],
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit"
+    },
+    "eslint.validate": ["typescript", "ts"]
 }
