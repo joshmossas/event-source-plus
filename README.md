@@ -15,6 +15,7 @@ The [default browser EventSource API](https://developer.mozilla.org/en-US/docs/W
 
 ## Table of Contents
 
+-   [Installation](#installation)
 -   [Usage](#usage)
     -   [Basic Request](#basic-request)
     -   [Canceling Requests](#canceling-requests)
