@@ -21,6 +21,7 @@ The [default browser EventSource API](https://developer.mozilla.org/en-US/docs/W
     -   [Canceling Requests](#canceling-requests)
     -   [Additional Options](#additional-options)
     -   [Working with Headers](#working-with-headers)
+    -   [Customizing Retry Behavior](#customizing-retry-behavior)
 -   [Listen Hooks](#listen-hooks)
 
 ## Installation
@@ -102,6 +103,37 @@ const eventSource = new EventSourcePlus("https://example.com", {
 ```
 
 The function syntax is especially useful when dealing with authentication because it allows you to always get a fresh auth token. This usually a pain point when working other SSE client libraries.
+
+### Customizing Retry Behavior
+
+By default this library will automatically retry the request indefinitely with exponential backoff maxing out at 30 seconds. Both those these values can be adjusted when initializing the `EventSourcePlus` class.
+
+```ts
+const eventSource = new EventSourcePlus("https://example.com",
+    {
+        // automatically retry up to 100 times (default is 'undefined')
+        maxRetryCount: 100
+        // set exponential backoff to max out at 10000 ms (default is "30000")
+        maxRetryInterval: 10000
+    }
+)
+```
+
+Additionally, you can abort the request inside listen hooks using the `EventSourceController`
+
+```ts
+// abort the request if we receive 10 server errors
+let errCount = 0;
+const controller = eventSource.listen({
+    onMessage(data) {},
+    onResponseError(request, response, options) {
+        errCount++;
+        if (errCount >= 10) {
+            controller.abort();
+        }
+    },
+});
+```
 
 ## Listen Hooks
 
