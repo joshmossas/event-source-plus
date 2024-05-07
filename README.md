@@ -6,6 +6,7 @@ The [default browser EventSource API](https://developer.mozilla.org/en-US/docs/W
 
 -   Use any HTTP method
 -   Send custom headers
+-   Optionally change headers when retrying
 -   Pass data as body or query params
 -   Runs in browsers, NodeJS, and workers
 -   First class typescript support
