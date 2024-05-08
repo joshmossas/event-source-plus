@@ -113,7 +113,7 @@ By default this library will automatically retry the request indefinitely with e
 const eventSource = new EventSourcePlus("https://example.com",
     {
         // automatically retry up to 100 times (default is 'undefined')
-        maxRetryCount: 100
+        maxRetryCount: 100,
         // set exponential backoff to max out at 10000 ms (default is "30000")
         maxRetryInterval: 10000
     }
@@ -127,7 +127,7 @@ Additionally, you can abort the request inside listen hooks using the `EventSour
 let errCount = 0;
 const controller = eventSource.listen({
     onMessage(data) {},
-    onResponseError(request, response, options) {
+    onResponseError({request, response, options}) {
         errCount++;
         if (errCount >= 10) {
             controller.abort();
