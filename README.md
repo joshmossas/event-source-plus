@@ -1,6 +1,6 @@
 # Event Source Plus
 
-The [default browser EventSource API](https://developer.mozilla.org/en-US/docs/Web/API/EventSource) has too many restrictions. Event Source Plus fixes that.
+The [default browser EventSource API](https://developer.mozilla.org/en-US/docs/Web/API/EventSource) is too limited. Event Source Plus fixes that.
 
 ## Features
 
@@ -110,14 +110,12 @@ The function syntax is especially useful when dealing with authentication becaus
 By default this library will automatically retry the request indefinitely with exponential backoff maxing out at 30 seconds. Both those these values can be adjusted when initializing the `EventSourcePlus` class.
 
 ```ts
-const eventSource = new EventSourcePlus("https://example.com",
-    {
-        // automatically retry up to 100 times (default is 'undefined')
-        maxRetryCount: 100,
-        // set exponential backoff to max out at 10000 ms (default is "30000")
-        maxRetryInterval: 10000
-    }
-)
+const eventSource = new EventSourcePlus("https://example.com", {
+    // automatically retry up to 100 times (default is 'undefined')
+    maxRetryCount: 100,
+    // set exponential backoff to max out at 10000 ms (default is "30000")
+    maxRetryInterval: 10000,
+});
 ```
 
 Additionally, you can abort the request inside listen hooks using the `EventSourceController`
@@ -127,7 +125,7 @@ Additionally, you can abort the request inside listen hooks using the `EventSour
 let errCount = 0;
 const controller = eventSource.listen({
     onMessage(data) {},
-    onResponseError({request, response, options}) {
+    onResponseError({ request, response, options }) {
         errCount++;
         if (errCount >= 10) {
             controller.abort();
