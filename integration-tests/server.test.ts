@@ -1,9 +1,9 @@
-import { describe, expect, test } from "vitest";
-import { type EventSourceHooks, EventSourcePlus } from "../src/eventSource";
-import { type FetchContext } from "ofetch";
-import { type SseMessage } from "../src/parse";
 import { randomUUID } from "crypto";
+import { describe, expect, test } from "vitest";
+
+import { type EventSourceHooks, EventSourcePlus } from "../src/eventSource";
 import { wait } from "../src/internal";
+import { type SseMessage } from "../src/parse";
 
 const baseUrl = `http://localhost:2020`;
 
@@ -32,7 +32,7 @@ test("get requests", async () => {
             );
             resCount++;
         },
-        onResponseError(context) {
+        onResponseError() {
             resErrorCount++;
         },
     });
@@ -63,12 +63,10 @@ test("post request", async () => {
             expect(message.data).toBe(body);
             messageCount++;
         },
-        onRequest: function (context: FetchContext<unknown, "stream">) {
+        onRequest: function () {
             openCount++;
         },
-        onRequestError: function (
-            context: FetchContext<unknown, "stream"> & { error: Error },
-        ) {
+        onRequestError: function () {
             errorCount++;
         },
     });
@@ -94,7 +92,7 @@ test("get request auto reconnection", async () => {
             openCount++;
         },
         onResponse() {},
-        onRequestError(context) {},
+        onRequestError() {},
     });
     await wait(1000);
     controller.abort();
@@ -112,16 +110,16 @@ test("get request 404", async () => {
     let resCount = 0;
     let resErrorCount = 0;
     const controller = eventSource.listen({
-        onMessage(message) {
+        onMessage() {
             msgCount++;
         },
-        onRequest(context) {
+        onRequest() {
             reqCount++;
         },
-        onRequestError(context) {
+        onRequestError() {
             reqErrorCount++;
         },
-        onResponse(context) {
+        onResponse() {
             resCount++;
         },
         onResponseError(context) {
@@ -139,7 +137,9 @@ test("get request 404", async () => {
 });
 
 test("request error(s)", async () => {
+    // cspell:disable
     const eventSource = new EventSourcePlus("asldkfjasdflkjafdslkj");
+    // cspell:enable
     let msgCount = 0;
     let reqCount = 0;
     let reqErrorCount = 0;
@@ -264,16 +264,16 @@ test("Non-SSE endpoint", async () => {
     let resCount = 0;
     let errorCount = 0;
     const controller = eventSource.listen({
-        onMessage(message) {
+        onMessage() {
             msgCount++;
         },
-        onRequest(context) {
+        onRequest() {
             openCount++;
         },
-        onResponse(context) {
+        onResponse() {
             resCount++;
         },
-        onResponseError(context) {
+        onResponseError() {
             errorCount++;
         },
     });

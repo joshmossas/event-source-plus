@@ -4,8 +4,9 @@ import {
     type FetchResponse,
     ofetch,
 } from "ofetch";
-import { type SseMessage, getBytes, messageListFromString } from "./parse";
+
 import { wait } from "./internal";
+import { getBytes, messageListFromString, type SseMessage } from "./parse";
 
 export const EventStreamContentType = "text/event-stream";
 const LastEventIdHeader = "last-event-id";
@@ -94,8 +95,7 @@ export class EventSourcePlus {
             onRequestError: hooks.onRequestError,
             onResponse: async (context) => {
                 if (typeof hooks.onResponse === "function") {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                    await hooks.onResponse(context as any);
+                    await hooks.onResponse(context as OnResponseContext);
                 }
                 const contentType =
                     context.response.headers.get("Content-Type");
@@ -108,16 +108,18 @@ export class EventSourcePlus {
                     );
                     context.error = error;
                     if (typeof hooks.onResponseError === "function") {
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                        hooks.onResponseError(context as any);
+                        hooks.onResponseError(
+                            context as OnResponseErrorContext,
+                        );
                     }
                     throw error;
                 }
             },
             onResponseError: async (context) => {
                 if (typeof hooks.onResponseError === "function") {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-                    await hooks.onResponseError(context as any);
+                    await hooks.onResponseError(
+                        context as OnResponseErrorContext,
+                    );
                 }
                 if (context.error instanceof Error) {
                     throw context.error;
