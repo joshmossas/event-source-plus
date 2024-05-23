@@ -1,6 +1,6 @@
 # Event Source Plus
 
-The [default browser EventSource API](https://developer.mozilla.org/en-US/docs/Web/API/EventSource) is too limited. Event Source Plus fixes that.
+A better EventSource implementation that runs in browsers, NodeJS, and workers. The default browser [EventSource API](https://developer.mozilla.org/en-US/docs/Web/API/EventSource) is too limited. Event Source Plus fixes that.
 
 ## Features
 
