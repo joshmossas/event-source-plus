@@ -44,7 +44,6 @@
         "@vitest/coverage-v8": "^1.6.0",
         "eslint": "^8.57.0",
         "eslint-config-prettier": "^9.1.0",
-        "eslint-plugin-import": "^2.29.1",
         "eslint-plugin-simple-import-sort": "^12.1.0",
         "h3": "^1.11.1",
         "listhen": "^1.7.2",
