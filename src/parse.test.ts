@@ -1,5 +1,6 @@
-import { test, expect, describe } from "vitest";
-import { type SseMessage, messageListFromString } from "./parse";
+import { describe, expect, test } from "vitest";
+
+import { messageListFromString, type SseMessage } from "./parse";
 
 describe("messagesFromString()", () => {
     test("complete messages", () => {

@@ -1,8 +1,9 @@
 {
-    "cSpell.words": ["joshmossas", "listhen", "ofetch", "Sosso"],
+    "cSpell.words": ["joshmossas", "listhen", "ofetch", "Sosso", "VALS"],
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
         "source.fixAll": "explicit"
     },
-    "eslint.validate": ["typescript", "ts"]
+    "eslint.validate": ["typescript", "ts"],
+    "eslint.experimental.useFlatConfig": true
 }
