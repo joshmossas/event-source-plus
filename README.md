@@ -80,7 +80,7 @@ const eventSource = new EventSourcePlus("https://example.com", {
 
 ### Working with Headers
 
-Headers can be set by passing an object or a function.
+Headers can be set by passing an object or a function. The function may return a header object or a promise that resolves to a header object.
 
 ```ts
 // object syntax //
@@ -95,6 +95,18 @@ const eventSource = new EventSourcePlus("https://example.com", {
 function getHeaders() {
     return {
         Authorization: "some-token",
+    };
+}
+const eventSource = new EventSourcePlus("https://example.com", {
+    // this function will rerun every time a request is sent
+    headers: getHeaders,
+});
+
+// async function syntax //
+async function getHeaders() {
+    const token = await getSomeToken();
+    return {
+        Authorization: token,
     };
 }
 const eventSource = new EventSourcePlus("https://example.com", {
