@@ -201,6 +201,48 @@ describe("retry with new headers", () => {
         expect(resCount > 1).toBe(true);
         expect(resErrorCount).toBe(0);
     });
+    test("using async function syntax", async () => {
+        const getHeaders = async () => {
+            await wait(50);
+            return {
+                Authorization: randomUUID(),
+            };
+        };
+        const eventSource = new EventSourcePlus(
+            `${baseUrl}/sse-invalidate-headers`,
+            { method: "delete", headers: getHeaders },
+        );
+        let msgCount = 0;
+        let reqCount = 0;
+        let reqErrorCount = 0;
+        let resCount = 0;
+        let resErrorCount = 0;
+        const controller = eventSource.listen({
+            onMessage() {
+                msgCount++;
+            },
+            onRequest() {
+                reqCount++;
+            },
+            onRequestError() {
+                reqErrorCount++;
+            },
+            onResponse() {
+                resCount++;
+            },
+            onResponseError(context) {
+                resErrorCount++;
+                expect(context.response.status).toBe(403);
+            },
+        });
+        await wait(3000);
+        controller.abort();
+        expect(msgCount > 1).toBe(true);
+        expect(reqCount > 1).toBe(true);
+        expect(reqErrorCount).toBe(0);
+        expect(resCount > 1).toBe(true);
+        expect(resErrorCount).toBe(0);
+    });
     test("using object syntax", { timeout: 5000 }, async () => {
         const usedTokens = [] as string[];
         let authToken = randomUUID();
