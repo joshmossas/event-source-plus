@@ -4,9 +4,15 @@ import { assertType, test } from "vitest";
 import { EventSourcePlusOptions } from "./event-source";
 import { wait } from "./internal";
 
-test("Header TypeInference", () => {
+test("Header Type Inference", () => {
     type HeaderInput = EventSourcePlusOptions["headers"];
     assertType<HeaderInput>(undefined);
+    assertType<HeaderInput>({
+        Authorization: "test",
+    });
+    assertType<HeaderInput>({
+        Authorization: undefined,
+    });
     assertType<HeaderInput>(() => {
         if (randomInt(100) >= 50) {
             return {
