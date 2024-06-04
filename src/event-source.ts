@@ -72,12 +72,15 @@ export class EventSourcePlus {
         if (typeof this.options.headers === "function") {
             const result = this.options.headers();
             if ("then" in result && typeof result.then === "function") {
-                headers = await result.then((data) => data);
+                headers = (await result.then((data) => data)) as Record<
+                    string,
+                    string
+                >;
             } else {
                 headers = result as Record<string, string>;
             }
         } else {
-            headers = this.options.headers ?? {};
+            headers = (this.options.headers as Record<string, string>) ?? {};
         }
         if (typeof headers.accept !== "string") {
             headers.accept = EventStreamContentType;
@@ -192,12 +195,12 @@ export class EventSourceController {
     }
 }
 
+type HeaderMap = Record<string, string | undefined>;
+
 export interface EventSourcePlusOptions
     extends Omit<RequestInit, "method" | "headers"> {
     method?: HttpMethod;
-    headers?:
-        | Record<string, string>
-        | (() => Record<string, string> | Promise<Record<string, string>>);
+    headers?: HeaderMap | (() => HeaderMap | Promise<HeaderMap>);
     maxRetryCount?: number;
     /**
      * Max retry wait time in MS.

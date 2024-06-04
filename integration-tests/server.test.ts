@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { describe, expect, test } from "vitest";
 
-import { type EventSourceHooks, EventSourcePlus } from "../src/eventSource";
+import { type EventSourceHooks, EventSourcePlus } from "../src/event-source";
 import { wait } from "../src/internal";
 import { type SseMessage } from "../src/parse";
 
@@ -165,6 +165,7 @@ describe("retry with new headers", () => {
     test("using function syntax", async () => {
         const getHeaders = () => ({
             Authorization: randomUUID(),
+            AnotherHeader: undefined,
         });
         const eventSource = new EventSourcePlus(
             `${baseUrl}/sse-invalidate-headers`,
