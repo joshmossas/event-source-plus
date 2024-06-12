@@ -1,4 +1,6 @@
+import axios from "axios";
 import { randomUUID } from "crypto";
+import { Fetch } from "ofetch";
 import { describe, expect, test } from "vitest";
 
 import { type EventSourceHooks, EventSourcePlus } from "../src/event-source";
@@ -83,6 +85,40 @@ test("get request auto reconnection", async () => {
     let messageCount = 0;
     const eventSource = new EventSourcePlus(
         `${baseUrl}/sse-send-10-then-close`,
+    );
+    const controller = eventSource.listen({
+        onMessage() {
+            messageCount++;
+        },
+        onRequest() {
+            openCount++;
+        },
+        onResponse() {},
+        onRequestError() {},
+    });
+    await wait(1000);
+    controller.abort();
+    expect(messageCount > 10).toBe(true);
+    expect(openCount > 1).toBe(true);
+});
+
+test("get request auto reconnection (custom fetch)", async () => {
+    let openCount = 0;
+    let messageCount = 0;
+    const fetch: Fetch = async (input: any) => {
+        const result = await axios({
+            method: "GET",
+            url: input,
+            responseType: "stream",
+        });
+        console.log("AXIOS RESULT", result);
+        return new Response(result.data);
+    };
+    const eventSource = new EventSourcePlus(
+        `${baseUrl}/sse-send-10-then-close`,
+        {
+            fetch,
+        },
     );
     const controller = eventSource.listen({
         onMessage() {

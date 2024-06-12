@@ -1,4 +1,7 @@
 import {
+    $Fetch,
+    createFetch,
+    Fetch,
     type FetchContext,
     type FetchOptions,
     type FetchResponse,
@@ -26,6 +29,8 @@ export class EventSourcePlus {
 
     maxRetryInterval: number;
 
+    private readonly fetch: $Fetch;
+
     constructor(
         url: string,
         options: EventSourcePlusOptions = {
@@ -37,6 +42,11 @@ export class EventSourcePlus {
         this.options = options;
         this.maxRetryCount = options.maxRetryCount;
         this.maxRetryInterval = options.maxRetryInterval ?? 30000;
+        if (this.options.fetch) {
+            this.fetch = createFetch({ fetch, Headers, AbortController });
+        } else {
+            this.fetch = ofetch;
+        }
     }
 
     private async _handleRetry(
@@ -138,7 +148,7 @@ export class EventSourcePlus {
             },
         };
         try {
-            const result = await ofetch(this.url, finalOptions);
+            const result = await this.fetch(this.url, finalOptions);
             this.retryCount = 0;
             this.retryInterval = 0;
             const decoder = new TextDecoder();
@@ -210,6 +220,10 @@ export interface EventSourcePlusOptions
      * (Default is 30000)
      */
     maxRetryInterval?: number;
+    /**
+     * Pass in a custom Fetch implementation
+     */
+    fetch?: Fetch;
 }
 
 export const HTTP_METHOD_VALS = [
