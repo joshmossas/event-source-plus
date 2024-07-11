@@ -40,8 +40,8 @@
     },
     "devDependencies": {
         "@eslint/js": "^9.6.0",
-        "@types/node": "^20.14.9",
-        "@vitest/coverage-v8": "^1.6.0",
+        "@types/node": "^20.14.10",
+        "@vitest/coverage-v8": "^2.0.2",
         "eslint": "^8.57.0",
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-simple-import-sort": "^12.1.1",
@@ -50,8 +50,8 @@
         "prettier": "^3.3.2",
         "start-server-and-test": "^2.0.4",
         "typescript": "^5.5.3",
-        "typescript-eslint": "^7.15.0",
+        "typescript-eslint": "^7.16.0",
         "unbuild": "^2.0.0",
-        "vitest": "^1.6.0"
+        "vitest": "^2.0.2"
     }
 }
