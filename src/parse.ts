@@ -9,62 +9,93 @@ export function messageListFromString(input: string): {
     messages: SseMessage[];
     leftoverData: string | undefined;
 } {
-    const parts = input.split("\n\n");
-    let leftoverInput: string | undefined;
-    if (!input.endsWith("\n\n")) {
-        leftoverInput = parts.pop();
-    }
     const messages: SseMessage[] = [];
-    for (const part of parts) {
-        const message = messageFromString(part);
-        if (message !== null) {
-            messages.push(message);
-        }
-    }
-    return { messages, leftoverData: leftoverInput };
-}
-
-export function messageFromString(input: string): SseMessage | null {
-    const lines = input.split("\n");
+    let line: string = "";
+    let ignoreNextNewline = false;
+    let data: string | undefined;
     let id: string | undefined;
     let event: string | undefined;
-    let data = "";
     let retry: number | undefined;
-    let hasData = false;
-    for (const line of lines) {
-        if (line.startsWith("data:")) {
-            data = line.substring(5).trim();
-            hasData = true;
-            continue;
+    let previousChar: string | undefined;
+    let pendingIndex = 0;
+    let isEndOfMessage = false;
+    function handleParseLine(pIndex: number) {
+        const result = parseLine(line);
+        data = result.data ?? data;
+        id = result.id ?? id;
+        event = result.event ?? event;
+        retry = result.retry ?? retry;
+        if (isEndOfMessage) {
+            if (typeof data === "string") {
+                messages.push({
+                    id: id,
+                    data: data,
+                    event: event ?? "message",
+                    retry: retry,
+                });
+            }
+            id = undefined;
+            data = undefined;
+            event = undefined;
+            retry = undefined;
+            pendingIndex = pIndex;
         }
-        if (line.startsWith("id:")) {
-            id = line.substring(3).trim();
-            continue;
-        }
-        if (line.startsWith("event:")) {
-            event = line.substring(6).trim();
-            continue;
-        }
-        if (line.startsWith("retry:")) {
-            const val = Number(line.substring(6).trim());
-            if (!Number.isNaN(val)) {
-                if (Number.isInteger(val)) {
-                    retry = val;
-                } else {
-                    retry = Math.round(val);
+        line = "";
+    }
+    for (let i = 0; i < input.length; i++) {
+        const char = input[i];
+        switch (char) {
+            case "\r": {
+                isEndOfMessage = previousChar === "\n" || previousChar === "\r";
+                ignoreNextNewline = true;
+                const pIndex = input[i + 1] === "\n" ? i + 2 : i + 1;
+                handleParseLine(pIndex);
+                break;
+            }
+            case "\n": {
+                if (ignoreNextNewline) {
+                    ignoreNextNewline = false;
+                    break;
                 }
+                isEndOfMessage = previousChar === "\n";
+                handleParseLine(i + 1);
+                break;
+            }
+            default:
+                line += char;
+                break;
+        }
+        previousChar = char;
+    }
+    return {
+        messages,
+        leftoverData: input.substring(pendingIndex),
+    };
+}
+
+export function parseLine(input: string): Partial<SseMessage> {
+    if (input.startsWith("data:")) {
+        return { data: input.substring(5).trim() };
+    }
+    if (input.startsWith("id:")) {
+        return { id: input.substring(3).trim() };
+    }
+    if (input.startsWith("event:")) {
+        return {
+            event: input.substring(6).trim(),
+        };
+    }
+    if (input.startsWith("retry:")) {
+        const val = Number(input.substring(6).trim());
+        if (!Number.isNaN(val)) {
+            if (Number.isInteger(val)) {
+                return { retry: val };
+            } else {
+                return { retry: Math.round(val) };
             }
         }
     }
-    if (!hasData) {
-        return null;
-    }
-    return {
-        id,
-        event: event ?? "message",
-        data,
-        retry,
-    };
+    return {};
 }
 
 export async function getBytes(
