@@ -136,6 +136,34 @@ test("get request 404", async () => {
     expect(resErrorCount > 1).toBe(true);
 });
 
+test("post request 500", async () => {
+    const eventSource = new EventSourcePlus(`${baseUrl}/send-500-error`, {
+        method: "post",
+        maxRetryCount: 2,
+    });
+    let resCount = 0;
+    let resErrorCount = 0;
+    const statusCodes: number[] = [];
+    const statusMessages: string[] = [];
+    const controller = eventSource.listen({
+        onMessage() {},
+        onResponse() {
+            resCount++;
+        },
+        onResponseError(context) {
+            statusCodes.push(context.response.status);
+            statusMessages.push(context.response.statusText);
+            resErrorCount++;
+        },
+    });
+    await wait(1000);
+    controller.abort();
+    expect(resCount).toBe(2);
+    expect(resErrorCount).toBe(2);
+    expect(statusCodes).toStrictEqual([500, 500]);
+    expect(statusMessages).toStrictEqual(["Internal error", "Internal error"]);
+});
+
 test("request error(s)", async () => {
     // cspell:disable
     const eventSource = new EventSourcePlus("asldkfjasdflkjafdslkj");
