@@ -101,28 +101,8 @@ export class EventSourcePlus {
             retry: false,
             onRequest: hooks.onRequest,
             onRequestError: hooks.onRequestError,
-            onResponse: async (context) => {
-                if (typeof hooks.onResponse === "function") {
-                    await hooks.onResponse(context as OnResponseContext);
-                }
-                const contentType =
-                    context.response.headers.get("Content-Type");
-                if (
-                    typeof contentType === "string" &&
-                    !contentType.includes(EventStreamContentType)
-                ) {
-                    const error = new Error(
-                        `Expected server to response with Content-Type: '${EventStreamContentType}'. Got '${contentType}'`,
-                    );
-                    context.error = error;
-                    if (typeof hooks.onResponseError === "function") {
-                        hooks.onResponseError(
-                            context as OnResponseErrorContext,
-                        );
-                    }
-                    throw error;
-                }
-            },
+            onResponse: async (context) =>
+                _handleResponse(context as OnResponseContext, hooks),
             onResponseError: async (context) => {
                 if (typeof hooks.onResponseError === "function") {
                     await hooks.onResponseError(
@@ -258,3 +238,26 @@ export type OnResponseContext = FetchContext<unknown, "stream"> & {
 export type OnResponseErrorContext = FetchContext<any, "stream"> & {
     response: FetchResponse<"stream">;
 };
+
+export async function _handleResponse(
+    context: OnResponseContext,
+    hooks: EventSourceHooks,
+) {
+    if (typeof hooks.onResponse === "function") {
+        await hooks.onResponse(context as OnResponseContext);
+    }
+    const contentType = context.response.headers.get("Content-Type");
+    if (
+        typeof contentType !== "string" ||
+        !contentType.includes(EventStreamContentType)
+    ) {
+        const error = new Error(
+            `Expected server to response with Content-Type: '${EventStreamContentType}'. Got '${contentType}'`,
+        );
+        context.error = error;
+        if (typeof hooks.onResponseError === "function") {
+            hooks.onResponseError(context as OnResponseErrorContext);
+        }
+        throw error;
+    }
+}
