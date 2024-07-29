@@ -2,8 +2,11 @@ import { randomInt } from "crypto";
 import { FetchResponse } from "ofetch";
 import { assertType, test } from "vitest";
 
-import { OnResponseContext } from "../dist";
-import { _handleResponse, EventSourcePlusOptions } from "./event-source";
+import {
+    _handleResponse,
+    EventSourcePlusOptions,
+    OnResponseContext,
+} from "./event-source";
 import { wait } from "./internal";
 
 test("Header Type Inference", () => {
