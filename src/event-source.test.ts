@@ -72,7 +72,9 @@ test("onResponse passes with valid response", async () => {
     const context: OnResponseContext = {
         request: {} as any,
         response: res,
-        options: {},
+        options: {
+            headers: new Headers(),
+        },
     };
     await _handleResponse(context, {
         onMessage() {},
@@ -114,7 +116,9 @@ test.fails(
         const context: OnResponseContext = {
             request: {} as any,
             response: res,
-            options: {},
+            options: {
+                headers: new Headers(),
+            },
         };
         await _handleResponse(context, {
             onMessage: () => {},
