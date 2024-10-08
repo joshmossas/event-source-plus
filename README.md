@@ -78,6 +78,14 @@ const eventSource = new EventSourcePlus("https://example.com", {
 });
 ```
 
+You can also pass in a custom `fetch` implementation, which is useful for environments that don't natively support `fetch`.
+
+```ts
+const eventSource = new EventSourcePlus("https://example.com", {
+    fetch: myCustomFetch,
+});
+```
+
 ### Working with Headers
 
 Headers can be set by passing an object or a function. The function may return a header object or a promise that resolves to a header object.
