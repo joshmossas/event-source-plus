@@ -23,7 +23,7 @@
         "build": "unbuild",
         "lint": "eslint src integration-tests",
         "test": "vitest run ./src --passWithNoTests",
-        "start-server": "pnpm listhen ./integration-tests/server.ts --port 2020",
+        "start-server": "pnpm jiti ./integration-tests/server.ts --port 2020",
         "format": "pnpm prettier --write ./src ./integration-tests ./.github .eslintrc.cjs .prettierrc build.config.ts package.json pnpm-lock.yaml README.md tsconfig.json ./.vscode",
         "integration-test": "start-server-and-test start-server http://localhost:2020 integration-test:execute",
         "integration-test:execute": "vitest run ./integration-tests --passWithNoTests --coverage.enabled --coverage.include=src"
@@ -39,18 +39,18 @@
         "ofetch": "^1.4.0"
     },
     "devDependencies": {
-        "@eslint/js": "^9.11.1",
-        "@types/node": "^22.7.4",
+        "@eslint/js": "^9.12.0",
+        "@types/node": "^22.7.5",
         "@vitest/coverage-v8": "^2.1.2",
-        "eslint": "^9.11.1",
+        "eslint": "^9.12.0",
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-simple-import-sort": "^12.1.1",
         "h3": "^1.13.0",
-        "listhen": "^1.9.0",
+        "jiti": "^2.3.3",
         "prettier": "^3.3.3",
         "start-server-and-test": "^2.0.8",
         "typescript": "^5.6.2",
-        "typescript-eslint": "^8.8.0",
+        "typescript-eslint": "^8.8.1",
         "unbuild": "^2.0.0",
         "vitest": "^2.1.2"
     }

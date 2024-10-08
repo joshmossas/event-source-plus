@@ -9,7 +9,9 @@ import {
     sendError,
     setResponseHeader,
     setResponseStatus,
+    toNodeListener,
 } from "h3";
+import { createServer } from "http";
 
 const app = createApp();
 const router = createRouter();
@@ -134,4 +136,8 @@ router.post(
     }),
 );
 
-export default app;
+const port = process.env.PORT || 2020;
+
+createServer(toNodeListener(app)).listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+});
