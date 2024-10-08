@@ -1,11 +1,14 @@
 import { randomUUID } from "crypto";
+import { Fetch } from "ofetch";
 import { describe, expect, test } from "vitest";
 
 import { type EventSourceHooks, EventSourcePlus } from "../src/event-source";
 import { wait } from "../src/internal";
 import { type SseMessage } from "../src/parse";
 
-const baseUrl = `http://localhost:2020`;
+const urlHost = "localhost:2020";
+const urlProtocol = `http`;
+const baseUrl = `${urlProtocol}://${urlHost}`;
 
 test("get requests", async () => {
     let messageCount = 0;
@@ -380,4 +383,28 @@ test("Max retry count", async () => {
     expect(msgCount).toBe(0);
     expect(openCount).toBe(10);
     expect(errorCount).toBe(10);
+});
+
+test("Custom Fetch Injection", async () => {
+    let usedCustomFetch = false;
+    const customFetch: Fetch = async (
+        input: string | URL | globalThis.Request,
+        init?: RequestInit,
+    ): Promise<Response> => {
+        usedCustomFetch = true;
+        return fetch(input, init);
+    };
+    const eventSource = new EventSourcePlus(`${baseUrl}/sse-get`, {
+        method: "get",
+        fetch: customFetch,
+    });
+    let msgCount = 0;
+    eventSource.listen({
+        onMessage(_) {
+            msgCount++;
+        },
+    });
+    await wait(1000);
+    expect(usedCustomFetch).toBe(true);
+    expect(msgCount > 0).toBe(true);
 });
