@@ -8,7 +8,10 @@ assignees: ""
 
 **Environment**
 
-<!-- Let us know what version you are running as well as what your environment looks like (OS, NodeJS version, etc) -->
+<!--
+    Let us know what version you are running as well as what your environment looks like (OS, NodeJS version, etc).
+    If relevant, include information about the backend server that you are sending requests to as well.
+-->
 
 **Reproduction**
 

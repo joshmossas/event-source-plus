@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
 import {
     createApp,
     createError,
@@ -7,6 +6,7 @@ import {
     eventHandler,
     getHeader,
     readBody,
+    sendError,
     setResponseHeader,
     setResponseStatus,
 } from "h3";
@@ -116,6 +116,21 @@ router.delete(
         stream.onClosed(() => {
             clearInterval(interval);
         });
+    }),
+);
+
+router.post(
+    "/send-500-error",
+    eventHandler((event) => {
+        sendError(
+            event,
+            createError({
+                status: 500,
+                statusCode: 500,
+                statusMessage: "Internal error",
+                statusText: "Internal error",
+            }),
+        );
     }),
 );
 
