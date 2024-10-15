@@ -185,9 +185,25 @@ type HeaderMap = Record<string, string | undefined>;
 
 export interface EventSourcePlusOptions
     extends Omit<RequestInit, "method" | "headers"> {
+    /**
+     * The request http method
+     *
+     * (Default is `"get"`)
+     */
     method?: HttpMethod;
+    /**
+     * Headers to be included in the http request, or a function returning headers.
+     */
     headers?: HeaderMap | (() => HeaderMap | Promise<HeaderMap>);
+    /**
+     * Custom fetch implementation if you want to override
+     */
     fetch?: Fetch;
+    /**
+     * Max number of times EventSourcePlus will attempt to retry connecting. Will retry indefinitely when set to `undefined`. The retry count gets reset after successfully connecting.
+     *
+     * (Default is `undefined`)
+     */
     maxRetryCount?: number;
     /**
      * Max retry wait time in MS.
@@ -197,9 +213,6 @@ export interface EventSourcePlusOptions
      * (Default is 30000)
      */
     maxRetryInterval?: number;
-    /**
-     * Custom fetch implementation if you want to override
-     */
 }
 
 export const HTTP_METHOD_VALS = [
