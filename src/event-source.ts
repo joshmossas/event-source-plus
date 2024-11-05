@@ -31,13 +31,7 @@ export class EventSourcePlus {
 
     fetch: $Fetch;
 
-    constructor(
-        url: string,
-        options: EventSourcePlusOptions = {
-            method: "get",
-            headers: {},
-        },
-    ) {
+    constructor(url: string, options: EventSourcePlusOptions = {}) {
         this.url = url;
         this.options = options;
         this.maxRetryCount = options.maxRetryCount;
@@ -149,15 +143,18 @@ export class EventSourcePlus {
             }
             return this._handleRetry(controller, hooks);
         }
-        if (controller.signal.aborted) {
+        if (
+            controller.signal.aborted ||
+            this.options.retryStrategy === "ON_ERROR"
+        ) {
             return;
         }
         return this._handleRetry(controller, hooks);
     }
 
-    listen(options: EventSourceHooks): EventSourceController {
+    listen(hooks: EventSourceHooks): EventSourceController {
         const controller = new EventSourceController(new AbortController());
-        void this._handleConnection(controller, options);
+        void this._handleConnection(controller, hooks);
         return controller;
     }
 }
@@ -213,6 +210,15 @@ export interface EventSourcePlusOptions
      * (Default is 30000)
      */
     maxRetryInterval?: number;
+    /**
+     * Set the client retry strategy.
+     *
+     * - `ALWAYS` - The client will always attempt to reopen the connection after it has been closed. Recommended for realtime applications. (Default)
+     * - `ON_ERROR` - The client will only attempt to reconnect if it received an error response. Useful for short lived text streams.
+     *
+     * @default "ALWAYS"
+     */
+    retryStrategy?: "ALWAYS" | "ON_ERROR";
 }
 
 export const HTTP_METHOD_VALS = [
