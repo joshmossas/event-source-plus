@@ -211,6 +211,7 @@ export interface EventSourcePlusOptions
      */
     maxRetryInterval?: number;
     /**
+     * @beta
      * Set the client retry strategy.
      *
      * - `always` - The client will always attempt to reopen the connection after it has been closed. Recommended for realtime applications. (Default)
