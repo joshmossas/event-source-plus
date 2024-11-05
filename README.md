@@ -154,6 +154,24 @@ const controller = eventSource.listen({
 });
 ```
 
+#### Changing the Retry Strategy (Beta)
+
+This library has two retry strategies. `always` and `on-error`.
+
+`always` is the default. It will always attempt to keep the connection open after it has been closed. This is useful for most realtime applications which need to keep a persistent connection with the backend.
+
+`on-error` will only retry if an error occurred. If an event stream was successfully received by the client it will not reconnect after the connection is closed. This is useful for short lived streams that have a fixed length (For example LLM response streams) since it means you no longer need to listen for a "DONE" event to close the connection.
+
+To change the retry strategy simply update the `retryStrategy` option:
+
+```ts
+const eventSource = new EventSourcePlus("https://example.com", {
+    retryStrategy: "on-error",
+});
+```
+
+_The `on-error` strategy is a BETA feature. If you are using this in your LLM applications or for other purposes please give feedback so that I can make sure all edge cases are being accounted for._
+
 ## Listen Hooks
 
 The `listen()` method has the following hooks:

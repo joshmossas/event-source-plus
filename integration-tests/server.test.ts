@@ -408,3 +408,72 @@ test("Custom Fetch Injection", async () => {
     expect(usedCustomFetch).toBe(true);
     expect(msgCount > 0).toBe(true);
 });
+
+test('"on-error" retry strategy does not retry after successful connection', async () => {
+    const eventSource = new EventSourcePlus(
+        `${baseUrl}/sse-send-10-then-close`,
+        { retryStrategy: "on-error" },
+    );
+    let msgCount = 0;
+    let openCount = 0;
+    let errCount = 0;
+    eventSource.listen({
+        onRequestError({ error }) {
+            errCount++;
+            expect(false, error.message);
+        },
+        onMessage() {
+            msgCount++;
+        },
+        onResponse() {
+            openCount++;
+        },
+        onResponseError({ error }) {
+            errCount++;
+            expect(
+                false,
+                error?.message ?? `Unexpectedly received response error`,
+            );
+        },
+    });
+    await wait(1000);
+    expect(msgCount).toBe(10);
+    expect(openCount).toBe(1);
+    expect(errCount).toBe(0);
+});
+
+test('"on-error" retry strategy does retry after error response', async () => {
+    const eventSource = new EventSourcePlus(`${baseUrl}/send-500-error`, {
+        method: "post",
+        maxRetryCount: 2,
+        retryStrategy: "on-error",
+    });
+    let resCount = 0;
+    let resErrorCount = 0;
+    const statusCodes: number[] = [];
+    const statusMessages: string[] = [];
+    await new Promise((res, rej) => {
+        const controller = eventSource.listen({
+            onMessage() {},
+            onResponse() {
+                resCount++;
+            },
+            onResponseError(context) {
+                statusCodes.push(context.response.status);
+                statusMessages.push(context.response.statusText);
+                resErrorCount++;
+                if (resCount == 2) {
+                    controller.abort();
+                    res(true);
+                }
+            },
+        });
+        setTimeout(() => {
+            rej("timeout exceeded");
+        }, 1000);
+    });
+    expect(resCount).toBe(2);
+    expect(resErrorCount).toBe(2);
+    expect(statusCodes).toStrictEqual([500, 500]);
+    expect(statusMessages).toStrictEqual(["Internal error", "Internal error"]);
+});
