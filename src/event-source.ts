@@ -145,7 +145,7 @@ export class EventSourcePlus {
         }
         if (
             controller.signal.aborted ||
-            this.options.retryStrategy === "ON_ERROR"
+            this.options.retryStrategy === "on-error"
         ) {
             return;
         }
@@ -213,12 +213,12 @@ export interface EventSourcePlusOptions
     /**
      * Set the client retry strategy.
      *
-     * - `ALWAYS` - The client will always attempt to reopen the connection after it has been closed. Recommended for realtime applications. (Default)
-     * - `ON_ERROR` - The client will only attempt to reconnect if it received an error response. Useful for short lived text streams.
+     * - `always` - The client will always attempt to reopen the connection after it has been closed. Recommended for realtime applications. (Default)
+     * - `on-error` - The client will only attempt to reconnect if it received an error response. Useful for short lived text streams.
      *
-     * @default "ALWAYS"
+     * @default "always"
      */
-    retryStrategy?: "ALWAYS" | "ON_ERROR";
+    retryStrategy?: "always" | "on-error";
 }
 
 export const HTTP_METHOD_VALS = [

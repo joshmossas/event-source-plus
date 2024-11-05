@@ -409,10 +409,10 @@ test("Custom Fetch Injection", async () => {
     expect(msgCount > 0).toBe(true);
 });
 
-test('"ON_ERROR" retry strategy does not retry after successful connection', async () => {
+test('"on-error" retry strategy does not retry after successful connection', async () => {
     const eventSource = new EventSourcePlus(
         `${baseUrl}/sse-send-10-then-close`,
-        { retryStrategy: "ON_ERROR" },
+        { retryStrategy: "on-error" },
     );
     let msgCount = 0;
     let openCount = 0;
@@ -442,11 +442,11 @@ test('"ON_ERROR" retry strategy does not retry after successful connection', asy
     expect(errCount).toBe(0);
 });
 
-test('"ON_ERROR" retry strategy does retry after error response', async () => {
+test('"on-error" retry strategy does retry after error response', async () => {
     const eventSource = new EventSourcePlus(`${baseUrl}/send-500-error`, {
         method: "post",
         maxRetryCount: 2,
-        retryStrategy: "ON_ERROR",
+        retryStrategy: "on-error",
     });
     let resCount = 0;
     let resErrorCount = 0;
