@@ -1,6 +1,6 @@
 {
     "name": "event-source-plus",
-    "version": "0.1.7",
+    "version": "0.1.8",
     "description": "A better EventSource API",
     "type": "module",
     "main": "./dist/index.cjs",
