@@ -271,7 +271,7 @@ This means that you can use `EventSourcePlus` in any environment that supports t
 
 -   All modern browsers
 -   NodeJS v16.5.0 or greater
-    -   _[node-fetch-native](https://www.npmjs.com/package/node-fetch-native) is used to backport `Fetch` to Node v16.5. In other cases the native Node Fetch implementation is used._
+    -   _[node-fetch-native](https://www.npmjs.com/package/node-fetch-native) is used to backport `Fetch` to Node v16.5. In other cases the native Node `Fetch` implementation is used._
 -   Any server runtime that also has support for these APIs
 
 ## Contributing
