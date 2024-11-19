@@ -8,7 +8,7 @@ A more configurable EventSource implementation that runs in browsers, NodeJS, an
 -   Send custom headers
 -   Optionally change headers when retrying
 -   Pass data as body or query params
--   Runs in browsers, NodeJS, and workers
+-   Runs in browsers, NodeJS, and workers\*
 -   First class typescript support
 -   Automatic retry with exponential backoff and hooks for customizing behavior
 -   ESM and CommonJS support
@@ -23,6 +23,7 @@ A more configurable EventSource implementation that runs in browsers, NodeJS, an
     -   [Working with Headers](#working-with-headers)
     -   [Customizing Retry Behavior](#customizing-retry-behavior)
 -   [Listen Hooks](#listen-hooks)
+-   [Supported Browsers and Server Runtimes](#supported-browsers-and-server-runtimes)
 -   [Contributing](#contributing)
 
 ## Installation
@@ -257,6 +258,21 @@ eventSource.listen({
     },
 });
 ```
+
+## Supported Browsers and Server Runtimes
+
+Under the hood, this library uses makes use of the following APIs:
+
+-   [Fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
+-   [ReadableStream](https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream/getReader)
+    -   _specifically the [getReader()](https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream/getReader) method_
+
+This means that you can use `EventSourcePlus` in any environment that supports those features including:
+
+-   All modern browsers
+-   NodeJS v16.5.0 or greater
+    -   _[node-fetch-native](https://www.npmjs.com/package/node-fetch-native) is used to backport `Fetch` to Node v16.5. In other cases the native Node Fetch implementation is used._
+-   Any server runtime that also has support for these APIs
 
 ## Contributing
 
