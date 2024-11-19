@@ -8,7 +8,7 @@ A more configurable EventSource implementation that runs in browsers, NodeJS, an
 -   Send custom headers
 -   Optionally change headers when retrying
 -   Pass data as body or query params
--   Runs in browsers, NodeJS, and workers\*
+-   Runs in browsers, NodeJS, and workers
 -   First class typescript support
 -   Automatic retry with exponential backoff and hooks for customizing behavior
 -   ESM and CommonJS support
