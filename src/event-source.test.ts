@@ -68,7 +68,7 @@ test("onResponse passes with valid response", async () => {
         text: function (): Promise<string> {
             throw new Error("Function not implemented.");
         },
-    };
+    } as any;
     const context: OnResponseContext = {
         request: {} as any,
         response: res,
@@ -112,7 +112,7 @@ test.fails(
             text: function (): Promise<string> {
                 throw new Error("Function not implemented.");
             },
-        };
+        } as any;
         const context: OnResponseContext = {
             request: {} as any,
             response: res,

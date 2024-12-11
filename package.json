@@ -39,19 +39,19 @@
         "ofetch": "^1.4.1"
     },
     "devDependencies": {
-        "@eslint/js": "^9.14.0",
-        "@types/node": "^22.9.0",
-        "@vitest/coverage-v8": "^2.1.4",
-        "eslint": "^9.14.0",
+        "@eslint/js": "^9.16.0",
+        "@types/node": "^22.10.1",
+        "@vitest/coverage-v8": "^2.1.8",
+        "eslint": "^9.16.0",
         "eslint-config-prettier": "^9.1.0",
         "eslint-plugin-simple-import-sort": "^12.1.1",
         "h3": "^1.13.0",
-        "jiti": "^2.4.0",
-        "prettier": "^3.3.3",
+        "jiti": "^2.4.1",
+        "prettier": "^3.4.2",
         "start-server-and-test": "^2.0.8",
-        "typescript": "^5.6.3",
-        "typescript-eslint": "^8.13.0",
+        "typescript": "^5.7.2",
+        "typescript-eslint": "^8.18.0",
         "unbuild": "^2.0.0",
-        "vitest": "^2.1.4"
+        "vitest": "^2.1.8"
     }
 }
