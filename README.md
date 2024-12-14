@@ -4,27 +4,27 @@ A more configurable EventSource implementation that runs in browsers, NodeJS, an
 
 ## Features
 
--   Use any HTTP method
--   Send custom headers
--   Optionally change headers when retrying
--   Pass data as body or query params
--   Runs in browsers, NodeJS, and workers
--   First class typescript support
--   Automatic retry with exponential backoff and hooks for customizing behavior
--   ESM and CommonJS support
+- Use any HTTP method
+- Send custom headers
+- Optionally change headers when retrying
+- Pass data as body or query params
+- Runs in browsers, NodeJS, and workers
+- First class typescript support
+- Automatic retry with exponential backoff and hooks for customizing behavior
+- ESM and CommonJS support
 
 ## Table of Contents
 
--   [Installation](#installation)
--   [Usage](#usage)
-    -   [Basic Request](#basic-request)
-    -   [Canceling Requests](#canceling-requests)
-    -   [Additional Options](#additional-options)
-    -   [Working with Headers](#working-with-headers)
-    -   [Customizing Retry Behavior](#customizing-retry-behavior)
--   [Listen Hooks](#listen-hooks)
--   [Supported Browsers and Server Runtimes](#supported-browsers-and-server-runtimes)
--   [Contributing](#contributing)
+- [Installation](#installation)
+- [Usage](#usage)
+    - [Basic Request](#basic-request)
+    - [Canceling Requests](#canceling-requests)
+    - [Additional Options](#additional-options)
+    - [Working with Headers](#working-with-headers)
+    - [Customizing Retry Behavior](#customizing-retry-behavior)
+- [Listen Hooks](#listen-hooks)
+- [Supported Browsers and Server Runtimes](#supported-browsers-and-server-runtimes)
+- [Contributing](#contributing)
 
 ## Installation
 
@@ -49,6 +49,16 @@ eventSource.listen({
     onMessage(message) {
         console.log(message);
     },
+});
+```
+
+#### Usage With LLM Applications
+
+When working with LLMs it may be preferable to set the retry strategy to `on-error`. For details why see [here](#changing-the-retry-strategy-beta)
+
+```ts
+const eventSource = new EventSourcePlus("https://example.com", {
+    retryStrategy: "on-error",
 });
 ```
 
@@ -177,11 +187,11 @@ _The `on-error` strategy is a BETA feature. If you are using this in your LLM ap
 
 The `listen()` method has the following hooks:
 
--   `onMessage`
--   `onRequest`
--   `onRequestError`
--   `onResponse`
--   `onResponseError`
+- `onMessage`
+- `onRequest`
+- `onRequestError`
+- `onResponse`
+- `onResponseError`
 
 The only required hook is `onMessage`.
 
@@ -243,8 +253,8 @@ eventSource.listen({
 
 `onResponseError` will fire if one of the following conditions have been met
 
--   `response.ok` is not `true` (i.e. server returned an error status code)
--   The `Content-Type` header sent by the server doesn't include `text/event-stream`
+- `response.ok` is not `true` (i.e. server returned an error status code)
+- The `Content-Type` header sent by the server doesn't include `text/event-stream`
 
 ```ts
 eventSource.listen({
@@ -263,16 +273,16 @@ eventSource.listen({
 
 Under the hood, this library uses makes use of the following APIs:
 
--   [Fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
--   [ReadableStream](https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream/getReader)
-    -   _specifically the [getReader()](https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream/getReader) method_
+- [Fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
+- [ReadableStream](https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream/getReader)
+    - _specifically the [getReader()](https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream/getReader) method_
 
 This means that you can use `EventSourcePlus` in any environment that supports those features including:
 
--   All modern browsers
--   NodeJS v16.5.0 or greater
-    -   _[node-fetch-native](https://www.npmjs.com/package/node-fetch-native) is used to backport `Fetch` to Node v16.5. In other cases the native Node `Fetch` implementation is used._
--   Any server runtime that also has support for these APIs
+- All modern browsers
+- NodeJS v16.5.0 or greater
+    - _[node-fetch-native](https://www.npmjs.com/package/node-fetch-native) is used to backport `Fetch` to Node v16.5. In other cases the native Node `Fetch` implementation is used._
+- Any server runtime that also has support for these APIs
 
 ## Contributing
 
