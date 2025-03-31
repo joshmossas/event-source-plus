@@ -11,7 +11,7 @@ A more configurable EventSource implementation that runs in browsers, NodeJS, an
 - Runs in browsers, NodeJS, and workers
 - First class typescript support
 - Automatic retry with exponential backoff and hooks for customizing behavior
-- Different retry strategies for use in realtime applications vs LLM applications
+- Multiple retry strategies for use in realtime applications vs LLM applications
 - ESM and CommonJS support
 
 ## Table of Contents
