@@ -705,7 +705,7 @@ test(
                         timeoutMs,
                     );
                     msgCount++;
-                    if (msgCount === 30) {
+                    if (msgCount === 40) {
                         clearTimeout(timeout);
                         res(undefined);
                         controller.abort();
@@ -724,9 +724,9 @@ test(
                 },
             });
         });
-        expect(openCount).toBe(3);
-        expect(msgCount).toBe(30);
-        expect(eventStream.lastEventId).toBe("30");
+        expect(openCount).toBe(4);
+        expect(msgCount).toBe(40);
+        expect(eventStream.lastEventId).toBe("40");
     },
 );
 

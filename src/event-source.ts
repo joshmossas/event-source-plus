@@ -93,7 +93,6 @@ export class EventSourcePlus {
         ) {
             headers[LastEventIdHeader] = this.lastEventId;
         }
-
         const finalOptions: FetchOptions<"stream"> = {
             ...this.options,
             method: this.options.method ?? "get",
