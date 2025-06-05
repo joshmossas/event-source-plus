@@ -168,6 +168,10 @@ export class EventSourcePlus {
         const controller = new EventSourceController(
             new AbortController(),
             (newHooks) => {
+                if (typeof newHooks === "undefined") {
+                    void this._handleConnection(controller, hooks);
+                    return;
+                }
                 void this._handleConnection(controller, {
                     ...hooks,
                     ...newHooks,
