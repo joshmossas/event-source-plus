@@ -155,6 +155,13 @@ const controller = eventSource.listen({
 });
 ```
 
+Just be aware that in this example you will have to call both `abort()` and `clearTimeout()` to permanently close the connection otherwise the timeout will reset the connection even though you aborted it.
+
+```ts
+clearTimeout(timeout);
+controller.abort();
+```
+
 ### Additional Options
 
 The `EventSourcePlus` constructor allows you to pass additional fetch options such as `method`, `body`, and `headers`.
