@@ -17,46 +17,43 @@ const baseUrl = `${urlProtocol}://${urlHost}`;
 test("get requests", async () => {
     let messageCount = 0;
     let reqCount = 0;
-    let reqErrorCount = 0;
     let resCount = 0;
-    let resErrorCount = 0;
-    const errorCount = 0;
     const eventSource = new EventSourcePlus(`${baseUrl}/sse-get`);
-    const controller = eventSource.listen({
-        onMessage() {
-            messageCount++;
-        },
-        onRequest() {
-            reqCount++;
-        },
-        onRequestError() {
-            reqErrorCount++;
-        },
-        onResponse(context) {
-            expect(context.response.status).toBe(200);
-            expect(context.response.headers.get("Content-Type")).toBe(
-                "text/event-stream",
-            );
-            resCount++;
-        },
-        onResponseError() {
-            resErrorCount++;
-        },
+    await new Promise((res, rej) => {
+        setTimeout(() => rej(), 2000);
+        const controller = eventSource.listen({
+            onMessage() {
+                messageCount++;
+                if (messageCount >= 17) controller.abort();
+            },
+            onRequest() {
+                reqCount++;
+            },
+            onRequestError({ error }) {
+                rej(error);
+            },
+            onResponse(context) {
+                expect(context.response.status).toBe(200);
+                expect(context.response.headers.get("Content-Type")).toBe(
+                    "text/event-stream",
+                );
+                resCount++;
+            },
+            onResponseError({ error }) {
+                rej(error);
+            },
+        });
+        controller.onAbort(() => res(undefined));
     });
-    await wait(1000);
-    controller.abort();
     expect(messageCount > 1).toBe(true);
     expect(reqCount).toBe(1);
-    expect(reqErrorCount).toBe(0);
     expect(resCount).toBe(1);
-    expect(resErrorCount).toBe(0);
-    expect(errorCount).toBe(0);
 });
 
 test("post request", async () => {
-    let openCount = 0;
+    let reqCount = 0;
+    let resCount = 0;
     let messageCount = 0;
-    let errorCount = 0;
     const body = '{"message":"hello world"}';
     const eventSource = new EventSourcePlus(`${baseUrl}/sse-post`, {
         method: "post",
@@ -65,85 +62,104 @@ test("post request", async () => {
         },
         body,
     });
-    const controller = eventSource.listen({
-        onMessage: function (message: SseMessage) {
-            expect(message.data).toBe(body);
-            messageCount++;
-        },
-        onResponse: function () {
-            openCount++;
-        },
-        onRequestError: function () {
-            errorCount++;
-        },
-        onResponseError: function () {
-            errorCount++;
-        },
+    await new Promise((res, rej) => {
+        setTimeout(() => rej(), 2000);
+        const controller = eventSource.listen({
+            onMessage() {
+                messageCount++;
+                if (messageCount >= 17) controller.abort();
+            },
+            onRequest() {
+                reqCount++;
+            },
+            onRequestError({ error }) {
+                rej(error);
+            },
+            onResponse(context) {
+                expect(context.response.status).toBe(200);
+                expect(context.response.headers.get("Content-Type")).toBe(
+                    "text/event-stream",
+                );
+                resCount++;
+            },
+            onResponseError({ error }) {
+                rej(error);
+            },
+        });
+        controller.onAbort(() => res(undefined));
     });
-
-    await wait(1000);
-    controller.abort();
-    expect(messageCount > 1).toBe(true);
-    expect(openCount).toBe(1);
-    expect(errorCount).toBe(0);
+    expect(messageCount).toBe(17);
+    expect(reqCount).toBe(1);
+    expect(resCount).toBe(1);
 });
 
 test("get request auto reconnection", async () => {
-    let openCount = 0;
+    let requestCount = 0;
+    let responseCount = 0;
     let messageCount = 0;
     const eventSource = new EventSourcePlus(
         `${baseUrl}/sse-send-10-then-close`,
     );
-    const controller = eventSource.listen({
-        onMessage() {
-            messageCount++;
-        },
-        onRequest() {
-            openCount++;
-        },
-        onResponse() {},
-        onRequestError() {},
+    await new Promise((res, rej) => {
+        setTimeout(() => rej("Timeout exceeded"), 2000);
+        const controller = eventSource.listen({
+            onMessage() {
+                messageCount++;
+                if (messageCount === 40) controller.abort();
+            },
+            onRequest() {
+                requestCount++;
+            },
+            onResponse() {
+                responseCount++;
+            },
+            onRequestError({ error }) {
+                rej(error);
+            },
+            onResponseError({ error }) {
+                rej(error);
+            },
+        });
+        controller.onAbort(() => res(undefined));
     });
-    await wait(1000);
-    controller.abort();
-    expect(messageCount > 10).toBe(true);
-    expect(openCount > 1).toBe(true);
+    expect(messageCount).toBe(40);
+    expect(requestCount).toBe(4);
+    expect(responseCount).toBe(4);
 });
 
 test("get request 404", async () => {
     const eventSource = new EventSourcePlus(`${baseUrl}/random-endpoint`, {
         maxRetryInterval: 1000,
     });
-    let msgCount = 0;
     let reqCount = 0;
-    let reqErrorCount = 0;
     let resCount = 0;
     let resErrorCount = 0;
-    const controller = eventSource.listen({
-        onMessage() {
-            msgCount++;
-        },
-        onRequest() {
-            reqCount++;
-        },
-        onRequestError() {
-            reqErrorCount++;
-        },
-        onResponse() {
-            resCount++;
-        },
-        onResponseError(context) {
-            resErrorCount++;
-            expect(context.response.status).toBe(404);
-        },
+    await new Promise((res, rej) => {
+        setTimeout(() => rej(), 2000);
+        const controller = eventSource.listen({
+            onMessage() {
+                rej("Expected no messages");
+            },
+            onRequest() {
+                reqCount++;
+            },
+            onRequestError() {
+                rej("Expected no request errors");
+            },
+            onResponse() {
+                resCount++;
+            },
+            onResponseError(context) {
+                resErrorCount++;
+                expect(context.response.status).toBe(404);
+                if (resErrorCount >= 4) controller.abort();
+            },
+        });
+        controller.onAbort(() => res(undefined));
     });
-    await wait(1000);
-    controller.abort();
-    expect(msgCount).toBe(0);
-    expect(reqCount > 1).toBe(true);
-    expect(reqErrorCount).toBe(0);
-    expect(resCount > 1).toBe(true);
-    expect(resErrorCount > 1).toBe(true);
+    expect(reqCount).toBe(4);
+    expect(resCount).toBe(4);
+    expect(resErrorCount).toBe(4);
 });
 
 test("post request 500", async () => {
@@ -178,25 +194,29 @@ test("request error(s)", async () => {
     // cspell:disable
     const eventSource = new EventSourcePlus("asldkfjasdflkjafdslkj");
     // cspell:enable
-    let msgCount = 0;
     let reqCount = 0;
     let reqErrorCount = 0;
-    const controller = eventSource.listen({
-        onMessage() {
-            msgCount++;
-        },
-        onRequest() {
-            reqCount++;
-        },
-        onRequestError() {
-            reqErrorCount++;
-        },
+    await new Promise((res, rej) => {
+        setTimeout(() => rej(), 2000);
+        const controller = eventSource.listen({
+            onMessage() {
+                rej("Expected no messages");
+            },
+            onRequest() {
+                reqCount++;
+            },
+            onResponse() {
+                rej("Expected no responses");
+            },
+            onRequestError() {
+                reqErrorCount++;
+                if (reqErrorCount >= 4) controller.abort();
+            },
+        });
+        controller.onAbort(() => res(undefined));
     });
-    await wait(1000);
-    controller.abort();
-    expect(msgCount).toBe(0);
     expect(reqCount).toBe(reqErrorCount);
-    expect(reqErrorCount > 1).toBe(true);
+    expect(reqErrorCount).toBe(4);
 });
 
 describe("retry with new headers", () => {
@@ -214,26 +234,29 @@ describe("retry with new headers", () => {
         let reqErrorCount = 0;
         let resCount = 0;
         let resErrorCount = 0;
-        const controller = eventSource.listen({
-            onMessage() {
-                msgCount++;
-            },
-            onRequest() {
-                reqCount++;
-            },
-            onRequestError() {
-                reqErrorCount++;
-            },
-            onResponse() {
-                resCount++;
-            },
-            onResponseError(context) {
-                resErrorCount++;
-                expect(context.response.status).toBe(403);
-            },
+        await new Promise((res, rej) => {
+            setTimeout(() => rej("Timeout exceeded"), 5000);
+            const controller = eventSource.listen({
+                onMessage() {
+                    msgCount++;
+                    if (msgCount >= 40) controller.abort();
+                },
+                onRequest() {
+                    reqCount++;
+                },
+                onRequestError() {
+                    reqErrorCount++;
+                },
+                onResponse() {
+                    resCount++;
+                },
+                onResponseError(context) {
+                    resErrorCount++;
+                    expect(context.response.status).toBe(403);
+                },
+            });
+            controller.onAbort(() => res(undefined));
         });
-        await wait(3000);
-        controller.abort();
         expect(msgCount > 1).toBe(true);
         expect(reqCount > 1).toBe(true);
         expect(reqErrorCount).toBe(0);
@@ -256,26 +279,29 @@ describe("retry with new headers", () => {
         let reqErrorCount = 0;
         let resCount = 0;
         let resErrorCount = 0;
-        const controller = eventSource.listen({
-            onMessage() {
-                msgCount++;
-            },
-            onRequest() {
-                reqCount++;
-            },
-            onRequestError() {
-                reqErrorCount++;
-            },
-            onResponse() {
-                resCount++;
-            },
-            onResponseError(context) {
-                resErrorCount++;
-                expect(context.response.status).toBe(403);
-            },
+        await new Promise((res, rej) => {
+            setTimeout(() => rej("Timeout exceeded"), 5000);
+            const controller = eventSource.listen({
+                onMessage() {
+                    msgCount++;
+                    if (msgCount >= 40) controller.abort();
+                },
+                onRequest() {
+                    reqCount++;
+                },
+                onRequestError() {
+                    reqErrorCount++;
+                },
+                onResponse() {
+                    resCount++;
+                },
+                onResponseError(context) {
+                    resErrorCount++;
+                    expect(context.response.status).toBe(403);
+                },
+            });
+            controller.onAbort(() => res(undefined));
         });
-        await wait(3000);
-        controller.abort();
         expect(msgCount > 1).toBe(true);
         expect(reqCount > 1).toBe(true);
         expect(reqErrorCount).toBe(0);
@@ -340,30 +366,31 @@ test("Non-SSE endpoint", async () => {
     const eventSource = new EventSourcePlus(`${baseUrl}/`, {
         method: "get",
     });
-    let msgCount = 0;
-    let openCount = 0;
+    let reqCount = 0;
     let resCount = 0;
     let errorCount = 0;
-    const controller = eventSource.listen({
-        onMessage() {
-            msgCount++;
-        },
-        onRequest() {
-            openCount++;
-        },
-        onResponse() {
-            resCount++;
-        },
-        onResponseError() {
-            errorCount++;
-        },
+    await new Promise((res, rej) => {
+        setTimeout(() => rej("Timeout exceeded"), 2000);
+        const controller = eventSource.listen({
+            onMessage() {
+                rej("Expected no messages");
+            },
+            onRequest() {
+                reqCount++;
+            },
+            onResponse() {
+                resCount++;
+            },
+            onResponseError() {
+                errorCount++;
+                if (errorCount >= 6) controller.abort();
+            },
+        });
+        controller.onAbort(() => res(undefined));
     });
-    await wait(1000);
-    controller.abort();
-    expect(msgCount).toBe(0);
-    expect(openCount > 1).toBe(true);
-    expect(errorCount > 1).toBe(true);
-    expect(resCount).toBe(errorCount);
+    expect(reqCount).toBe(6);
+    expect(resCount).toBe(6);
+    expect(errorCount).toBe(6);
 });
 
 test("Max retry count", async () => {
@@ -374,19 +401,21 @@ test("Max retry count", async () => {
     let msgCount = 0;
     let openCount = 0;
     let errorCount = 0;
-    const controller = eventSource.listen({
-        onMessage(_) {
-            msgCount++;
-        },
-        onRequest(_) {
-            openCount++;
-        },
-        onResponseError(_) {
-            errorCount++;
-        },
+    await new Promise((res, rej) => {
+        setTimeout(() => rej("Timeout exceeded"), 2000);
+        const controller = eventSource.listen({
+            onMessage(_) {
+                msgCount++;
+            },
+            onRequest(_) {
+                openCount++;
+            },
+            onResponseError(_) {
+                errorCount++;
+            },
+        });
+        controller.onAbort(() => res(undefined));
     });
-    await wait(1000);
-    controller.abort();
     expect(msgCount).toBe(0);
     expect(openCount).toBe(10);
     expect(errorCount).toBe(10);
@@ -406,14 +435,18 @@ test("Custom Fetch Injection", async () => {
         fetch: customFetch,
     });
     let msgCount = 0;
-    eventSource.listen({
-        onMessage(_) {
-            msgCount++;
-        },
+    await new Promise((res, rej) => {
+        setTimeout(() => rej(), 2000);
+        const controller = eventSource.listen({
+            onMessage(_) {
+                msgCount++;
+                if (msgCount >= 11) controller.abort();
+            },
+        });
+        controller.onAbort(() => res(undefined));
     });
-    await wait(1000);
     expect(usedCustomFetch).toBe(true);
-    expect(msgCount > 0).toBe(true);
+    expect(msgCount).toBe(11);
 });
 
 test('"on-error" retry strategy does not retry after successful connection', async () => {
@@ -424,26 +457,29 @@ test('"on-error" retry strategy does not retry after successful connection', asy
     let msgCount = 0;
     let openCount = 0;
     let errCount = 0;
-    eventSource.listen({
-        onRequestError({ error }) {
-            errCount++;
-            expect(false, error.message);
-        },
-        onMessage() {
-            msgCount++;
-        },
-        onResponse() {
-            openCount++;
-        },
-        onResponseError({ error }) {
-            errCount++;
-            expect(
-                false,
-                error?.message ?? `Unexpectedly received response error`,
-            );
-        },
+    await new Promise((res, rej) => {
+        setTimeout(() => rej(), 2000);
+        const controller = eventSource.listen({
+            onRequestError({ error }) {
+                errCount++;
+                expect(false, error.message);
+            },
+            onMessage() {
+                msgCount++;
+            },
+            onResponse() {
+                openCount++;
+            },
+            onResponseError({ error }) {
+                errCount++;
+                expect(
+                    false,
+                    error?.message ?? `Unexpectedly received response error`,
+                );
+            },
+        });
+        controller.onAbort(() => res(undefined));
     });
-    await wait(1000);
     expect(msgCount).toBe(10);
     expect(openCount).toBe(1);
     expect(errCount).toBe(0);
@@ -616,6 +652,7 @@ test("reconnect() -> override hook(s)", async () => {
     expect(openCount).toBe(1);
     expect(msgCount).toBe(10);
     expect(msgCount2).toBe(0);
+    expect(eventSource.lastEventId).toBe("10");
     await new Promise((res, rej) => {
         setTimeout(() => rej(), 60000);
         controller.onAbort(() => res(undefined));
@@ -629,4 +666,75 @@ test("reconnect() -> override hook(s)", async () => {
     expect(openCount).toBe(2);
     expect(msgCount).toBe(10);
     expect(msgCount2).toBe(7);
+    expect(eventSource.lastEventId).toBe("17");
+    await new Promise((res, rej) => {
+        setTimeout(() => rej(), 60000);
+        controller.onAbort(() => res(undefined));
+        controller.reconnect({
+            onMessage(_) {
+                msgCount++;
+                if (msgCount >= 15) controller.abort();
+            },
+        });
+    });
+    expect(openCount).toBe(3);
+    expect(msgCount).toBe(15);
+    expect(msgCount2).toBe(7);
+    expect(eventSource.lastEventId).toBe("22");
 });
+
+test(
+    "reconnect() -> implement simple heartbeat check",
+    { timeout: 30000 },
+    async () => {
+        const eventStream = new EventSourcePlus(
+            `${baseUrl}/sse-send-10-quick-then-slow`,
+        );
+        let msgCount = 0;
+        let openCount = 0;
+        let controller: EventSourceController;
+        const timeoutMs = 1000;
+        await new Promise((res, rej) => {
+            setTimeout(() => rej(), 30000);
+            let timeout = setTimeout(() => controller.reconnect(), timeoutMs);
+            controller = eventStream.listen({
+                onMessage(_msg) {
+                    clearTimeout(timeout);
+                    timeout = setTimeout(
+                        () => controller.reconnect(),
+                        timeoutMs,
+                    );
+                    msgCount++;
+                    if (msgCount === 30) {
+                        clearTimeout(timeout);
+                        res(undefined);
+                        controller.abort();
+                    }
+                },
+                onResponse(_context) {
+                    openCount++;
+                },
+                onRequestError({ error }) {
+                    clearTimeout(timeout);
+                    rej(error);
+                },
+                onResponseError({ error }) {
+                    clearTimeout(timeout);
+                    rej(error);
+                },
+            });
+        });
+        expect(openCount).toBe(3);
+        expect(msgCount).toBe(30);
+        expect(eventStream.lastEventId).toBe("30");
+    },
+);
+
+// function promiseWithTimeout<T>(input: Promise<T>, timeout: number) {
+//     return Promise.race([
+//         new Promise((_, rej) => {
+//             setTimeout(() => rej(), timeout);
+//         }),
+//         input,
+//     ]) as Promise<T>;
+// }

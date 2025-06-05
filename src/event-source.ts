@@ -48,6 +48,7 @@ export class EventSourcePlus {
             typeof this.maxRetryCount === "number" &&
             this.retryCount >= this.maxRetryCount
         ) {
+            controller.abort("max retry count reached");
             return;
         }
         if (this.retryInterval === 0) {

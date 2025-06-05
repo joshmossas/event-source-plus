@@ -1,3 +1,4 @@
+import { a } from "@arrirpc/schema";
 import {
     createApp,
     createError,
@@ -39,8 +40,18 @@ router.get(
     eventHandler((event) => {
         const stream = createEventStream(event);
         void stream.send();
+        const lastEventId = a.coerce(
+            a.uint32(),
+            getHeader(event, "Last-Event-ID") ?? "0",
+        );
+        const eventId = lastEventId.success ? lastEventId.value : 0;
+        let numMessages = 0;
         const interval = setInterval(async () => {
-            await stream.push("hello world");
+            numMessages++;
+            await stream.push({
+                id: `${numMessages + eventId}`,
+                data: "hello world",
+            });
         });
         stream.onClosed(() => {
             clearInterval(interval);
@@ -82,6 +93,33 @@ router.get(
                 await stream.close();
             }
         });
+        stream.onClosed(() => {
+            clearInterval(interval);
+        });
+    }),
+);
+
+router.get(
+    "/sse-send-10-quick-then-slow",
+    eventHandler(async (event) => {
+        const stream = createEventStream(event);
+        void stream.send();
+        const parsedEventId = a.coerce(
+            a.uint32(),
+            getHeader(event, "Last-Event-ID") ?? "0",
+        );
+        let msgCount = parsedEventId.success ? parsedEventId.value : 0;
+        for (let i = 0; i < 10; i++) {
+            msgCount++;
+            await stream.push({
+                id: `${msgCount}`,
+                data: "hello world",
+            });
+        }
+        const interval = setInterval(async () => {
+            msgCount++;
+            await stream.push({ id: `${msgCount}`, data: "hello world" });
+        }, 2000);
         stream.onClosed(() => {
             clearInterval(interval);
         });

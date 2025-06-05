@@ -12,6 +12,9 @@ importers:
         specifier: ^1.4.1
         version: 1.4.1
     devDependencies:
+      '@arrirpc/schema':
+        specifier: ^0.79.1
+        version: 0.79.1
       '@eslint/js':
         specifier: ^9.28.0
         version: 9.28.0
@@ -60,6 +63,12 @@ packages:
   '@ampproject/remapping@2.3.0':
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
     engines: {node: '>=6.0.0'}
+
+  '@arrirpc/schema@0.79.1':
+    resolution: {integrity: sha512-0Uwwdh9qISyDsP7koIFQV7t35IF+1gbmNlkBGhLskLSUNjMUPtDFZdl3LNjpKvCjYnkX8Z22A+JWJUHK73VAkA==}
+
+  '@arrirpc/type-defs@0.79.1':
+    resolution: {integrity: sha512-fqO1WU2zzTYrzbRldrfnuSojVjgaNtNbvobf+2RGHE9aoIY3H6gefwaWhEUf48Lzf86f147IBY4fPBRd2qhkNw==}
 
   '@babel/code-frame@7.27.1':
     resolution: {integrity: sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg==}
@@ -504,6 +513,9 @@ packages:
 
   '@sideway/pinpoint@2.0.0':
     resolution: {integrity: sha512-RNiOoTPkptFtSVzQevY/yWtZwf/RxyVnPy/OcA9HBM3MlGDnBEYL5B41H0MTn0Uec8Hi+2qUtTfG2WWZBmMejQ==}
+
+  '@standard-schema/spec@1.0.0':
+    resolution: {integrity: sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==}
 
   '@trysound/sax@0.2.0':
     resolution: {integrity: sha512-L7z9BgrNEcYyUYtF+HaEfiS5ebkh9jXqbszz7pC0hRBPaatV0XjSD3+eHrpqFemQfgwiFF0QPIarnIihIDn7OA==}
@@ -2002,6 +2014,17 @@ snapshots:
       '@jridgewell/gen-mapping': 0.3.8
       '@jridgewell/trace-mapping': 0.3.25
 
+  '@arrirpc/schema@0.79.1':
+    dependencies:
+      '@arrirpc/type-defs': 0.79.1
+      '@standard-schema/spec': 1.0.0
+      scule: 1.3.0
+      uncrypto: 0.1.3
+
+  '@arrirpc/type-defs@0.79.1':
+    dependencies:
+      scule: 1.3.0
+
   '@babel/code-frame@7.27.1':
     dependencies:
       '@babel/helper-validator-identifier': 7.27.1
@@ -2319,6 +2342,8 @@ snapshots:
   '@sideway/formula@3.0.1': {}
 
   '@sideway/pinpoint@2.0.0': {}
+
+  '@standard-schema/spec@1.0.0': {}
 
   '@trysound/sax@0.2.0': {}
 
