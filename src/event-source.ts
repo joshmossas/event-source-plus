@@ -69,6 +69,7 @@ export class EventSourcePlus {
         hooks: EventSourceHooks,
     ): Promise<void> {
         let headers: Record<string, string> = {};
+        const abortSignal = controller._abortController.signal;
         if (typeof this.options.headers === "function") {
             const result = this.options.headers();
             if ("then" in result && typeof result.then === "function") {
@@ -97,18 +98,24 @@ export class EventSourcePlus {
             method: this.options.method ?? "get",
             responseType: "stream",
             headers,
-            signal: controller.signal,
+            signal: abortSignal,
             retry: false,
-            onRequest: hooks.onRequest,
-            onRequestError: hooks.onRequestError,
+            onRequest: (context) => {
+                if (controller.signal.aborted || abortSignal.aborted) return;
+                if (isAbortError(context.error)) return;
+                return hooks.onRequest?.(context);
+            },
+            onRequestError: async (context) => {
+                if (controller.signal.aborted || abortSignal.aborted) return;
+                if (isAbortError(context.error)) return;
+                return hooks.onRequestError?.(context);
+            },
             onResponse: async (context) =>
                 _handleResponse(context as OnResponseContext, hooks),
             onResponseError: async (context) => {
-                if (typeof hooks.onResponseError === "function") {
-                    await hooks.onResponseError(
-                        context as OnResponseErrorContext,
-                    );
-                }
+                if (abortSignal.aborted) return;
+                if (isAbortError(context.error)) return;
+                await hooks.onResponseError?.(context);
                 if (context.error instanceof Error) {
                     throw context.error;
                 }
@@ -137,14 +144,19 @@ export class EventSourcePlus {
                     hooks.onMessage(message);
                 }
             });
-        } catch (_) {
-            if (controller.signal.aborted) {
+        } catch (err) {
+            if (
+                abortSignal.aborted ||
+                controller.signal.aborted ||
+                isAbortError(err)
+            ) {
                 return;
             }
             return this._handleRetry(controller, hooks);
         }
         if (
             controller.signal.aborted ||
+            abortSignal.aborted ||
             this.options.retryStrategy === "on-error"
         ) {
             return;
@@ -153,10 +165,19 @@ export class EventSourcePlus {
     }
 
     listen(hooks: EventSourceHooks): EventSourceController {
-        const controller = new EventSourceController(new AbortController());
+        const controller = new EventSourceController(
+            new AbortController(),
+            () => {
+                void this._handleConnection(controller, hooks);
+            },
+        );
         void this._handleConnection(controller, hooks);
         return controller;
     }
+}
+
+function isAbortError(input: unknown) {
+    return input instanceof DOMException && input.name === "AbortError";
 }
 
 export class EventSourceController {
@@ -164,13 +185,31 @@ export class EventSourceController {
      * Do not modify. For internal use.
      */
     _abortController: AbortController;
+    private _createConnection?: () => Promise<void> | void;
 
-    constructor(controller?: AbortController) {
+    constructor(
+        controller?: AbortController,
+        createConnection?: () => Promise<void> | void,
+    ) {
         this._abortController = controller ?? new AbortController();
+        this._createConnection = createConnection;
     }
 
     abort(reason?: string) {
+        this._abortHook?.();
         this._abortController.abort(reason);
+    }
+
+    reconnect() {
+        this._abortController.abort();
+        this._abortController = new AbortController();
+        void this._createConnection?.();
+    }
+
+    private _abortHook?: () => any;
+
+    onAbort(fn: () => any) {
+        this._abortHook = fn;
     }
 
     get signal() {
