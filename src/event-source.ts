@@ -154,11 +154,11 @@ export class EventSourcePlus {
             }
             return this._handleRetry(controller, hooks);
         }
-        if (
-            controller.signal.aborted ||
-            abortSignal.aborted ||
-            this.options.retryStrategy === "on-error"
-        ) {
+        if (controller.signal.aborted || abortSignal.aborted) {
+            return;
+        }
+        if (this.options.retryStrategy === "on-error") {
+            controller.abort("Stream has ended");
             return;
         }
         return this._handleRetry(controller, hooks);
@@ -167,8 +167,11 @@ export class EventSourcePlus {
     listen(hooks: EventSourceHooks): EventSourceController {
         const controller = new EventSourceController(
             new AbortController(),
-            () => {
-                void this._handleConnection(controller, hooks);
+            (newHooks) => {
+                void this._handleConnection(controller, {
+                    ...hooks,
+                    ...newHooks,
+                });
             },
         );
         void this._handleConnection(controller, hooks);
@@ -185,14 +188,14 @@ export class EventSourceController {
      * Do not modify. For internal use.
      */
     _abortController: AbortController;
-    private _createConnection?: () => Promise<void> | void;
+    private _connect?: (hooks?: EventSourceHooks) => Promise<void> | void;
 
     constructor(
         controller?: AbortController,
-        createConnection?: () => Promise<void> | void,
+        connect?: (hooks?: EventSourceHooks) => Promise<void> | void,
     ) {
         this._abortController = controller ?? new AbortController();
-        this._createConnection = createConnection;
+        this._connect = connect;
     }
 
     abort(reason?: string) {
@@ -200,10 +203,10 @@ export class EventSourceController {
         this._abortController.abort(reason);
     }
 
-    reconnect() {
+    reconnect(hooks?: EventSourceHooks) {
         this._abortController.abort();
         this._abortController = new AbortController();
-        void this._createConnection?.();
+        void this._connect?.(hooks);
     }
 
     private _abortHook?: () => any;
