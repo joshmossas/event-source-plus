@@ -2,7 +2,11 @@ import { randomUUID } from "crypto";
 import { Fetch } from "ofetch";
 import { describe, expect, test } from "vitest";
 
-import { type EventSourceHooks, EventSourcePlus } from "../src/event-source";
+import {
+    EventSourceController,
+    type EventSourceHooks,
+    EventSourcePlus,
+} from "../src/event-source";
 import { wait } from "../src/internal";
 import { type SseMessage } from "../src/parse";
 
@@ -66,10 +70,13 @@ test("post request", async () => {
             expect(message.data).toBe(body);
             messageCount++;
         },
-        onRequest: function () {
+        onResponse: function () {
             openCount++;
         },
         onRequestError: function () {
+            errorCount++;
+        },
+        onResponseError: function () {
             errorCount++;
         },
     });
@@ -476,4 +483,150 @@ test('"on-error" retry strategy does retry after error response', async () => {
     expect(resErrorCount).toBe(2);
     expect(statusCodes).toStrictEqual([500, 500]);
     expect(statusMessages).toStrictEqual(["Internal error", "Internal error"]);
+});
+
+test("get requests -> abort() then reconnect()", async () => {
+    let messageCount = 0;
+    let reqCount = 0;
+    let reqErrorCount = 0;
+    let resCount = 0;
+    let resErrorCount = 0;
+    const errorCount = 0;
+    const eventSource = new EventSourcePlus(`${baseUrl}/sse-get`);
+    let controller: EventSourceController;
+    await new Promise((res, rej) => {
+        setTimeout(() => {
+            rej();
+        }, 60000);
+        controller = eventSource.listen({
+            onMessage() {
+                messageCount++;
+                if (messageCount === 10) {
+                    controller.abort();
+                    return;
+                }
+                if (messageCount === 20) {
+                    controller.abort();
+                }
+            },
+            onRequest() {
+                reqCount++;
+            },
+            onRequestError() {
+                reqErrorCount++;
+            },
+            onResponse(context) {
+                expect(context.response.status).toBe(200);
+                expect(context.response.headers.get("Content-Type")).toBe(
+                    "text/event-stream",
+                );
+                resCount++;
+            },
+            onResponseError() {
+                resErrorCount++;
+            },
+        });
+        controller.onAbort(() => res(undefined));
+    });
+
+    expect(messageCount).toBe(10);
+    expect(reqCount).toBe(1);
+    expect(reqErrorCount).toBe(0);
+    expect(resCount).toBe(1);
+    expect(resErrorCount).toBe(0);
+    expect(errorCount).toBe(0);
+    await new Promise((res, rej) => {
+        setTimeout(() => {
+            rej();
+        }, 60000);
+        controller.onAbort(() => res(undefined));
+        controller.reconnect();
+    });
+    expect(messageCount).toBe(20);
+    expect(reqCount).toBe(2);
+    expect(reqErrorCount).toBe(0);
+    expect(resCount).toBe(2);
+    expect(resErrorCount).toBe(0);
+    expect(errorCount).toBe(0);
+});
+
+test("post request -> manually trigger reconnect", async () => {
+    let openCount = 0;
+    let messageCount = 0;
+    let errorCount = 0;
+    const body = '{"message":"hello world"}';
+    const eventSource = new EventSourcePlus(`${baseUrl}/sse-post`, {
+        method: "post",
+        headers: {
+            "Content-Type": "text/plain",
+        },
+        body,
+    });
+    await new Promise((res, rej) => {
+        setTimeout(() => {
+            rej();
+        }, 60000);
+        const controller = eventSource.listen({
+            onMessage: function (message: SseMessage) {
+                expect(message.data).toBe(body);
+                messageCount++;
+                if (messageCount >= 20) {
+                    controller.abort();
+                    res(true);
+                }
+                if (messageCount === 10) controller.reconnect();
+            },
+            onResponse: function () {
+                openCount++;
+            },
+            onRequestError: function () {
+                errorCount++;
+            },
+            onResponseError: function () {
+                errorCount++;
+            },
+        });
+    });
+    expect(errorCount).toBe(0);
+    expect(openCount).toBe(2);
+    expect(messageCount).toBe(20);
+});
+
+test("reconnect() -> override hook(s)", async () => {
+    const eventSource = new EventSourcePlus(`${baseUrl}/sse-get`);
+    let openCount = 0;
+    let msgCount = 0;
+    let msgCount2 = 0;
+    let controller: EventSourceController;
+    await new Promise((res, rej) => {
+        setTimeout(() => rej(), 60000);
+        controller = eventSource.listen({
+            onMessage(_) {
+                msgCount++;
+                if (msgCount === 10) {
+                    controller.abort();
+                }
+            },
+            onResponse() {
+                openCount++;
+            },
+        });
+        controller.onAbort(() => res(undefined));
+    });
+    expect(openCount).toBe(1);
+    expect(msgCount).toBe(10);
+    expect(msgCount2).toBe(0);
+    await new Promise((res, rej) => {
+        setTimeout(() => rej(), 60000);
+        controller.onAbort(() => res(undefined));
+        controller.reconnect({
+            onMessage(_) {
+                msgCount2++;
+                if (msgCount2 === 7) controller.abort();
+            },
+        });
+    });
+    expect(openCount).toBe(2);
+    expect(msgCount).toBe(10);
+    expect(msgCount2).toBe(7);
 });

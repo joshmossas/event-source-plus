@@ -11,7 +11,7 @@ A more configurable EventSource implementation that runs in browsers, NodeJS, an
 - Runs in browsers, NodeJS, and workers
 - First class typescript support
 - Automatic retry with exponential backoff and hooks for customizing behavior
-- Multiple [retry strategies](#changing-the-retry-strategy-beta) for use in realtime applications vs LLM applications
+- Multiple [retry strategies](#changing-the-retry-strategy) for use in realtime applications vs LLM applications
 - ESM and CommonJS support
 
 ## Table of Contents
@@ -19,7 +19,10 @@ A more configurable EventSource implementation that runs in browsers, NodeJS, an
 - [Installation](#installation)
 - [Usage](#usage)
     - [Basic Request](#basic-request)
-    - [Canceling Requests](#canceling-requests)
+    - [The EventSourceController](#the-eventsourcecontroller)
+        - [Abort()](#abort)
+        - [OnAbort()](#onabort)
+        - [Reconnect()](#reconnect)
     - [Additional Options](#additional-options)
     - [Working with Headers](#working-with-headers)
     - [Customizing Retry Behavior](#customizing-retry-behavior)
@@ -63,9 +66,13 @@ const eventSource = new EventSourcePlus("https://example.com", {
 });
 ```
 
-### Canceling Requests
+### The `EventSourceController`
 
-The `listen()` method returns a controller that you can use to abort the request.
+The `listen()` method returns a controller that you can use to interact with the active event stream.
+
+#### Abort()
+
+Use the `abort()` method to cancel requests
 
 ```ts
 const controller = eventSource.listen({
@@ -74,6 +81,78 @@ const controller = eventSource.listen({
     },
 });
 controller.abort();
+```
+
+The abort method can be used inside of listen hooks as well
+
+```ts
+let msgCount = 0;
+const controller = eventSource.listen({
+    onMessage(message) {
+        msgCount++;
+        if (msgCount >= 20) {
+            controller.abort();
+            break;
+        }
+        console.log(message);
+    },
+    onResponse({ response }) {
+        if (response.status === 409) {
+            controller.abort();
+            return;
+        }
+    },
+});
+```
+
+#### OnAbort()
+
+You can register a listener via `onAbort()`. Use this if you want to trigger some logic whenever an event stream is closed
+
+```ts
+const controller = eventSource.listen({
+    onMessage(message) {
+        console.log(message);
+    },
+});
+controller.onAbort(() => {
+    console.log("The event stream was closed");
+});
+controller.abort();
+```
+
+#### Reconnect()
+
+The `reconnect()` is used to reset the connection. If a connection is currently open it will forcibly abort the old request and open a new one.
+
+```ts
+const controller = eventSource.listen({
+    onMessage(message) {
+        console.log(message);
+    },
+});
+// close the connection
+controller.abort();
+// reopen the connection
+controller.reconnect();
+```
+
+##### Example: Heartbeat Detection
+
+Let's say we expect the server to send a heartbeat message every 20 seconds. With the `reconnect()` method we can force the connection to reopen if we haven't received a message within 20 seconds.
+
+```ts
+let timeout = setTimeout(() => controller.reconnect(), 20000);
+const controller = eventSource.listen({
+    onMessage(message) {
+        // cancel the existing timer because we have received a message
+        clearTimeout(timeout);
+        // set a new timer where we forcibly reopen the connection
+        // if we haven't received a message in 20000ms
+        timeout = setTimeout(() => controller.reconnect(), 20000);
+        console.log(message);
+    },
+});
 ```
 
 ### Additional Options
@@ -166,7 +245,7 @@ const controller = eventSource.listen({
 });
 ```
 
-#### Changing the Retry Strategy (Beta)
+#### Changing the Retry Strategy
 
 This library has two retry strategies. `always` and `on-error`.
 
@@ -181,8 +260,6 @@ const eventSource = new EventSourcePlus("https://example.com", {
     retryStrategy: "on-error",
 });
 ```
-
-_The `on-error` strategy is a BETA feature. If you are using this in your LLM applications or for other purposes please give feedback so that I can make sure all edge cases are being accounted for._
 
 ## Listen Hooks
 
