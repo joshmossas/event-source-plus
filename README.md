@@ -123,7 +123,7 @@ controller.abort();
 
 #### Reconnect()
 
-The `reconnect()` is used to reset the connection. If a connection is currently open it will forcibly abort the old request and open a new one.
+The `reconnect()` method is used to reset the connection. If a connection is currently open it will forcibly abort the old request and open a new one.
 
 ```ts
 const controller = eventSource.listen({
