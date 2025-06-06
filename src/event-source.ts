@@ -87,10 +87,7 @@ export class EventSourcePlus {
         if (typeof headers.accept !== "string") {
             headers.accept = EventStreamContentType;
         }
-        if (
-            typeof this.lastEventId === "string" &&
-            typeof headers[LastEventIdHeader] !== "string"
-        ) {
+        if (typeof this.lastEventId === "string") {
             headers[LastEventIdHeader] = this.lastEventId;
         }
         const finalOptions: FetchOptions<"stream"> = {
