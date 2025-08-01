@@ -200,7 +200,7 @@ export class EventSourceController {
     }
 
     abort(reason?: string) {
-        this._abortHook?.();
+        this._abortHook?.(reason);
         this._abortController.abort(reason);
     }
 
@@ -210,9 +210,9 @@ export class EventSourceController {
         void this._connect?.(hooks);
     }
 
-    private _abortHook?: () => any;
+    private _abortHook?: (reason?: string) => any;
 
-    onAbort(fn: () => any) {
+    onAbort(fn: (reason?: string) => any) {
         this._abortHook = fn;
     }
 
