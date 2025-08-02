@@ -730,6 +730,32 @@ test(
     },
 );
 
+describe("abort event", () => {
+    test("manual abort", async () => {
+        const eventStream = new EventSourcePlus(`${baseUrl}/sse-get`);
+
+        await new Promise((res, rej) => {
+            let msgCount = 0;
+            const timeout = setTimeout(() => {
+                rej();
+            }, 2000);
+            const controller = eventStream.listen({
+                onMessage(_) {
+                    msgCount++;
+                    if (msgCount >= 5) {
+                        controller.abort();
+                    }
+                },
+            });
+            controller.onAbort((e) => {
+                expect(e.type).toBe("manual");
+                clearTimeout(timeout);
+                res(true);
+            });
+        });
+    });
+});
+
 // function promiseWithTimeout<T>(input: Promise<T>, timeout: number) {
 //     return Promise.race([
 //         new Promise((_, rej) => {
