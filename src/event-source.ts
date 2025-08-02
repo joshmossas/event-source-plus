@@ -48,7 +48,10 @@ export class EventSourcePlus {
             typeof this.maxRetryCount === "number" &&
             this.retryCount >= this.maxRetryCount
         ) {
-            controller.abort("max retry count reached");
+            controller._emitEvent({
+                type: "error",
+                reason: "max retry count reached",
+            });
             return;
         }
         if (this.retryInterval === 0) {
@@ -155,7 +158,10 @@ export class EventSourcePlus {
             return;
         }
         if (this.options.retryStrategy === "on-error") {
-            controller.abort("Stream has ended");
+            controller._emitEvent({
+                type: "end-of-stream",
+                reason: "Stream has ended",
+            });
             return;
         }
         return this._handleRetry(controller, hooks);
@@ -184,6 +190,18 @@ function isAbortError(input: unknown) {
     return input instanceof DOMException && input.name === "AbortError";
 }
 
+export type EventSourcePlusAbortEvent = {
+    /**
+     * "manual" - controller.abort() was manually called by the user
+     *
+     * "end-of-stream" - request was aborted because the stream from the server is ended ("on-error" retry strategy only)
+     *
+     * "error" - request was aborted because of an error
+     */
+    type: "manual" | "end-of-stream" | "error";
+    reason?: string;
+};
+
 export class EventSourceController {
     /**
      * Do not modify. For internal use.
@@ -200,8 +218,7 @@ export class EventSourceController {
     }
 
     abort(reason?: string) {
-        this._abortHook?.(reason);
-        this._abortController.abort(reason);
+        this._emitEvent({ type: "manual", reason: reason });
     }
 
     reconnect(hooks?: EventSourceHooks) {
@@ -210,9 +227,14 @@ export class EventSourceController {
         void this._connect?.(hooks);
     }
 
-    private _abortHook?: (reason?: string) => any;
+    private _abortHook?: (event: EventSourcePlusAbortEvent) => any;
 
-    onAbort(fn: (reason?: string) => any) {
+    _emitEvent(e: EventSourcePlusAbortEvent) {
+        this._abortHook?.(e);
+        this._abortController.abort(e.reason);
+    }
+
+    onAbort(fn: (event: EventSourcePlusAbortEvent) => any) {
         this._abortHook = fn;
     }
 
