@@ -115,10 +115,30 @@ const controller = eventSource.listen({
         console.log(message);
     },
 });
-controller.onAbort(() => {
+controller.onAbort((_) => {
     console.log("The event stream was closed");
 });
 controller.abort();
+```
+
+`onAbort()` receives an `EventSourcePlusAbortEvent` which provides more information about the closure of the event stream.
+
+```ts
+controller.onAbort((e) => {
+    console.log(e.reason);
+    switch (e.type) {
+        case "manual":
+            console.log("the stream was manually closed by the user");
+            break;
+        case "error":
+            console.log("the stream was closed due to an error");
+            break;
+        // "on-error" retry strategy only
+        case "end-of-stream":
+            console.log("the stream was closed because it has ended");
+            break;
+    }
+});
 ```
 
 #### Reconnect()
