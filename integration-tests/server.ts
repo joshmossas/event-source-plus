@@ -14,6 +14,9 @@ import {
 } from "h3";
 import { createServer } from "http";
 
+import { wait } from "../src/internal";
+import { ServerPaths } from "./server-paths";
+
 const app = createApp();
 const router = createRouter();
 app.use(router);
@@ -36,7 +39,7 @@ router.get(
 );
 
 router.get(
-    "/sse-get",
+    ServerPaths.SseGet,
     eventHandler((event) => {
         const stream = createEventStream(event);
         void stream.send();
@@ -60,7 +63,7 @@ router.get(
 );
 
 router.post(
-    "/sse-post",
+    ServerPaths.SsePost,
     eventHandler(async (event) => {
         const body = await readBody(event);
         if (typeof body !== "string") {
@@ -81,7 +84,7 @@ router.post(
 );
 
 router.get(
-    "/sse-send-10-then-close",
+    ServerPaths.SseSend10ThenClose,
     eventHandler((event) => {
         const stream = createEventStream(event);
         void stream.send();
@@ -100,7 +103,7 @@ router.get(
 );
 
 router.get(
-    "/sse-send-10-quick-then-slow",
+    ServerPaths.SseSend10QuickThenSlow,
     eventHandler(async (event) => {
         const stream = createEventStream(event);
         void stream.send();
@@ -129,7 +132,7 @@ router.get(
 const expiredTokens: Record<string, boolean> = {};
 
 router.delete(
-    "/sse-invalidate-headers",
+    ServerPaths.SseInvalidateHeaders,
     eventHandler((event) => {
         const token = getHeader(event, "Authorization") ?? "";
         if (expiredTokens[token] === true) {
@@ -160,7 +163,7 @@ router.delete(
 );
 
 router.post(
-    "/send-500-error",
+    ServerPaths.Send500Error,
     eventHandler((event) => {
         sendError(
             event,
@@ -171,6 +174,21 @@ router.post(
                 statusText: "Internal error",
             }),
         );
+    }),
+);
+
+router.get(
+    ServerPaths.TimeoutTest,
+    eventHandler(async (event) => {
+        await wait(5000);
+        const stream = createEventStream(event);
+        void stream.send();
+        const interval = setInterval(() => {
+            stream.push("hello world");
+        });
+        stream.onClosed(() => {
+            clearInterval(interval);
+        });
     }),
 );
 
