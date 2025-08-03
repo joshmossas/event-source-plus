@@ -1,6 +1,8 @@
+import assert from "node:assert";
+
 import { randomUUID } from "crypto";
 import { Fetch } from "ofetch";
-import { describe, expect, test } from "vitest";
+import { describe, expect, it, test } from "vitest";
 
 import {
     EventSourceController,
@@ -9,16 +11,22 @@ import {
 } from "../src/event-source";
 import { wait } from "../src/internal";
 import { type SseMessage } from "../src/parse";
+import { ServerPaths } from "./server-paths";
 
 const urlHost = "localhost:2020";
 const urlProtocol = `http`;
 const baseUrl = `${urlProtocol}://${urlHost}`;
 
+function endpoint(path: string) {
+    assert(path.startsWith("/"));
+    return `${baseUrl}${path}`;
+}
+
 test("get requests", async () => {
     let messageCount = 0;
     let reqCount = 0;
     let resCount = 0;
-    const eventSource = new EventSourcePlus(`${baseUrl}/sse-get`);
+    const eventSource = new EventSourcePlus(endpoint(ServerPaths.SseGet));
     await new Promise((res, rej) => {
         setTimeout(() => rej(), 2000);
         const controller = eventSource.listen({
@@ -55,7 +63,7 @@ test("post request", async () => {
     let resCount = 0;
     let messageCount = 0;
     const body = '{"message":"hello world"}';
-    const eventSource = new EventSourcePlus(`${baseUrl}/sse-post`, {
+    const eventSource = new EventSourcePlus(endpoint(ServerPaths.SsePost), {
         method: "post",
         headers: {
             "Content-Type": "text/plain",
@@ -98,7 +106,7 @@ test("get request auto reconnection", async () => {
     let responseCount = 0;
     let messageCount = 0;
     const eventSource = new EventSourcePlus(
-        `${baseUrl}/sse-send-10-then-close`,
+        endpoint(ServerPaths.SseSend10ThenClose),
     );
     await new Promise((res, rej) => {
         setTimeout(() => rej("Timeout exceeded"), 2000);
@@ -128,7 +136,7 @@ test("get request auto reconnection", async () => {
 });
 
 test("get request 404", async () => {
-    const eventSource = new EventSourcePlus(`${baseUrl}/random-endpoint`, {
+    const eventSource = new EventSourcePlus(endpoint("/random-endpoint"), {
         maxRetryInterval: 1000,
     });
     let reqCount = 0;
@@ -163,10 +171,13 @@ test("get request 404", async () => {
 });
 
 test("post request 500", async () => {
-    const eventSource = new EventSourcePlus(`${baseUrl}/send-500-error`, {
-        method: "post",
-        maxRetryCount: 2,
-    });
+    const eventSource = new EventSourcePlus(
+        endpoint(ServerPaths.Send500Error),
+        {
+            method: "post",
+            maxRetryCount: 2,
+        },
+    );
     let resCount = 0;
     let resErrorCount = 0;
     const statusCodes: number[] = [];
@@ -226,7 +237,7 @@ describe("retry with new headers", () => {
             AnotherHeader: undefined,
         });
         const eventSource = new EventSourcePlus(
-            `${baseUrl}/sse-invalidate-headers`,
+            endpoint(ServerPaths.SseInvalidateHeaders),
             { method: "delete", headers: getHeaders },
         );
         let msgCount = 0;
@@ -271,7 +282,7 @@ describe("retry with new headers", () => {
             };
         };
         const eventSource = new EventSourcePlus(
-            `${baseUrl}/sse-invalidate-headers`,
+            endpoint(ServerPaths.SseInvalidateHeaders),
             { method: "delete", headers: getHeaders },
         );
         let msgCount = 0;
@@ -312,7 +323,7 @@ describe("retry with new headers", () => {
         const usedTokens = [] as string[];
         let authToken = randomUUID();
         const eventSource = new EventSourcePlus(
-            `${baseUrl}/sse-invalidate-headers`,
+            endpoint(ServerPaths.SseInvalidateHeaders),
             {
                 method: "delete",
                 headers: {
@@ -363,7 +374,7 @@ describe("retry with new headers", () => {
 });
 
 test("Non-SSE endpoint", async () => {
-    const eventSource = new EventSourcePlus(`${baseUrl}/`, {
+    const eventSource = new EventSourcePlus(endpoint("/"), {
         method: "get",
     });
     let reqCount = 0;
@@ -394,7 +405,7 @@ test("Non-SSE endpoint", async () => {
 });
 
 test("Max retry count", async () => {
-    const eventSource = new EventSourcePlus(`${baseUrl}/some-random-endpoint`, {
+    const eventSource = new EventSourcePlus(endpoint("/some-random-endpoint"), {
         maxRetryCount: 10,
         maxRetryInterval: 1,
     });
@@ -430,7 +441,7 @@ test("Custom Fetch Injection", async () => {
         usedCustomFetch = true;
         return fetch(input, init);
     };
-    const eventSource = new EventSourcePlus(`${baseUrl}/sse-get`, {
+    const eventSource = new EventSourcePlus(endpoint(ServerPaths.SseGet), {
         method: "get",
         fetch: customFetch,
     });
@@ -451,8 +462,10 @@ test("Custom Fetch Injection", async () => {
 
 test('"on-error" retry strategy does not retry after successful connection', async () => {
     const eventSource = new EventSourcePlus(
-        `${baseUrl}/sse-send-10-then-close`,
-        { retryStrategy: "on-error" },
+        endpoint(ServerPaths.SseSend10ThenClose),
+        {
+            retryStrategy: "on-error",
+        },
     );
     let msgCount = 0;
     let openCount = 0;
@@ -486,11 +499,14 @@ test('"on-error" retry strategy does not retry after successful connection', asy
 });
 
 test('"on-error" retry strategy does retry after error response', async () => {
-    const eventSource = new EventSourcePlus(`${baseUrl}/send-500-error`, {
-        method: "post",
-        maxRetryCount: 2,
-        retryStrategy: "on-error",
-    });
+    const eventSource = new EventSourcePlus(
+        endpoint(ServerPaths.Send500Error),
+        {
+            method: "post",
+            maxRetryCount: 2,
+            retryStrategy: "on-error",
+        },
+    );
     let resCount = 0;
     let resErrorCount = 0;
     const statusCodes: number[] = [];
@@ -528,7 +544,7 @@ test("get requests -> abort() then reconnect()", async () => {
     let resCount = 0;
     let resErrorCount = 0;
     const errorCount = 0;
-    const eventSource = new EventSourcePlus(`${baseUrl}/sse-get`);
+    const eventSource = new EventSourcePlus(endpoint(ServerPaths.SseGet));
     let controller: EventSourceController;
     await new Promise((res, rej) => {
         setTimeout(() => {
@@ -591,7 +607,7 @@ test("post request -> manually trigger reconnect", async () => {
     let messageCount = 0;
     let errorCount = 0;
     const body = '{"message":"hello world"}';
-    const eventSource = new EventSourcePlus(`${baseUrl}/sse-post`, {
+    const eventSource = new EventSourcePlus(endpoint(ServerPaths.SsePost), {
         method: "post",
         headers: {
             "Content-Type": "text/plain",
@@ -629,7 +645,7 @@ test("post request -> manually trigger reconnect", async () => {
 });
 
 test("reconnect() -> override hook(s)", async () => {
-    const eventSource = new EventSourcePlus(`${baseUrl}/sse-get`);
+    const eventSource = new EventSourcePlus(endpoint(ServerPaths.SseGet));
     let openCount = 0;
     let msgCount = 0;
     let msgCount2 = 0;
@@ -688,7 +704,7 @@ test(
     { timeout: 30000 },
     async () => {
         const eventStream = new EventSourcePlus(
-            `${baseUrl}/sse-send-10-quick-then-slow`,
+            endpoint(ServerPaths.SseSend10QuickThenSlow),
         );
         let msgCount = 0;
         let openCount = 0;
@@ -731,9 +747,8 @@ test(
 );
 
 describe("abort event", () => {
-    test("manual abort", async () => {
-        const eventStream = new EventSourcePlus(`${baseUrl}/sse-get`);
-
+    test("abort manually", async () => {
+        const eventStream = new EventSourcePlus(endpoint(ServerPaths.SseGet));
         await new Promise((res, rej) => {
             let msgCount = 0;
             const timeout = setTimeout(() => {
@@ -754,6 +769,108 @@ describe("abort event", () => {
             });
         });
     });
+    test("abort on error", async () => {
+        const eventStream = new EventSourcePlus(
+            endpoint(ServerPaths.Send500Error),
+            {
+                maxRetryCount: 3,
+            },
+        );
+        await new Promise((res, rej) => {
+            const timeout = setTimeout(() => {
+                rej("timeout exceeded");
+            }, 5000);
+            const controller = eventStream.listen({
+                onMessage(_) {
+                    expect(false).toBe(true);
+                },
+            });
+            controller.onAbort((e) => {
+                clearTimeout(timeout);
+                expect(e.type).toBe("error");
+                res(undefined);
+            });
+        });
+    });
+    test("abort on stream ended", async () => {
+        const eventStream = new EventSourcePlus(
+            endpoint(ServerPaths.SseSend10ThenClose),
+            {
+                retryStrategy: "on-error",
+            },
+        );
+        await new Promise((res, rej) => {
+            const timeout = setTimeout(() => {
+                rej("timeout exceeded");
+                controller.abort();
+            }, 2000);
+            const controller = eventStream.listen({
+                onMessage(_) {},
+            });
+            controller.onAbort((e) => {
+                expect(e.type).toBe("end-of-stream");
+                clearTimeout(timeout);
+                res(undefined);
+            });
+        });
+    });
+});
+
+describe("timeout parameter", { timeout: 10000 }, () => {
+    it("should error when timeout exceeded", async () => {
+        const eventStream = new EventSourcePlus(
+            endpoint(ServerPaths.TimeoutTest),
+            {
+                timeout: 2000,
+            },
+        );
+        await new Promise((res, rej) => {
+            const timeout = setTimeout(() => {
+                rej("test timeout exceeded");
+                listener.abort();
+            }, 10000);
+            const listener = eventStream.listen({
+                onMessage(_) {
+                    listener.abort("received message");
+                },
+            });
+            listener.onAbort((e) => {
+                clearTimeout(timeout);
+                expect(e.type).toBe("error");
+                expect(e.reason?.toLowerCase().includes("timeout")).toBe(true);
+                res(undefined);
+            });
+        });
+    });
+    it(
+        "should not error when timeout not exceeded",
+        { timeout: 10000 },
+        async () => {
+            const eventStream = new EventSourcePlus(
+                endpoint(ServerPaths.TimeoutTest),
+                {
+                    timeout: 6000,
+                },
+            );
+            await new Promise((res, rej) => {
+                const timeout = setTimeout(() => {
+                    rej("test timeout exceeded");
+                    listener.abort();
+                }, 10000);
+                const listener = eventStream.listen({
+                    onMessage(_) {
+                        listener.abort("received message");
+                    },
+                });
+                listener.onAbort((e) => {
+                    clearTimeout(timeout);
+                    expect(e.type).toBe("manual");
+                    expect(e.reason).toBe("received message");
+                    res(undefined);
+                });
+            });
+        },
+    );
 });
 
 // function promiseWithTimeout<T>(input: Promise<T>, timeout: number) {
