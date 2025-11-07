@@ -222,6 +222,7 @@ export class EventSourceController {
      */
     _abortController: AbortController;
     private _connect?: (hooks?: EventSourceHooks) => Promise<void> | void;
+    private _didAbort = false;
 
     constructor(
         controller?: AbortController,
@@ -236,6 +237,7 @@ export class EventSourceController {
     }
 
     reconnect(hooks?: EventSourceHooks) {
+        this._didAbort = false;
         this._abortController.abort();
         this._abortController = new AbortController();
         void this._connect?.(hooks);
@@ -244,6 +246,8 @@ export class EventSourceController {
     private _abortHook?: (event: EventSourcePlusAbortEvent) => any;
 
     _emitEvent(e: EventSourcePlusAbortEvent) {
+        if (this._didAbort) return;
+        this._didAbort = true;
         this._abortHook?.(e);
         this._abortController.abort(e.reason);
     }
