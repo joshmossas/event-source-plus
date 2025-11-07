@@ -871,6 +871,38 @@ describe("timeout parameter", { timeout: 10000 }, () => {
             });
         },
     );
+    it(
+        "should not trigger a duplicate onAbort if abort was previously called",
+        { timeout: 2000 },
+        async () => {
+            const eventStream = new EventSourcePlus(
+                endpoint(ServerPaths.Send500Error),
+                {
+                    method: "post",
+                    timeout: 1000,
+                },
+            );
+            let numResponseErr = 0;
+            let onAbortCount = 0;
+            const controller = eventStream.listen({
+                onMessage: function (_) {
+                    expect(false, "should not receive a message").toBe(true);
+                },
+                onResponseError() {
+                    numResponseErr++;
+                    controller.abort();
+                },
+            });
+            controller.onAbort((event) => {
+                onAbortCount++;
+                expect(event.reason).toBe(undefined);
+                expect(event.type).toBe("manual");
+            });
+            await wait(1850);
+            expect(numResponseErr).toBe(1);
+            expect(onAbortCount).toBe(1);
+        },
+    );
 });
 
 // function promiseWithTimeout<T>(input: Promise<T>, timeout: number) {
