@@ -3,6 +3,7 @@ import {
     createFetch,
     Fetch,
     type FetchContext,
+    FetchError,
     type FetchOptions,
     type FetchResponse,
     ofetch,
@@ -76,26 +77,30 @@ export class EventSourcePlus {
         controller: EventSourceController,
         hooks: EventSourceHooks,
     ): Promise<void> {
-        let headers: Record<string, string> = {};
+        let headers: Headers;
         const abortSignal = controller._abortController.signal;
         if (typeof this.options.headers === "function") {
             const result = this.options.headers();
             if ("then" in result && typeof result.then === "function") {
-                headers = (await result.then((data) => data)) as Record<
-                    string,
-                    string
-                >;
+                headers = new Headers(
+                    (await result.then((data) => data)) as Record<
+                        string,
+                        string
+                    >,
+                );
             } else {
-                headers = result as Record<string, string>;
+                headers = new Headers(result as Record<string, string>);
             }
         } else {
-            headers = (this.options.headers as Record<string, string>) ?? {};
+            headers = new Headers(
+                (this.options.headers as Record<string, string>) ?? {},
+            );
         }
-        if (typeof headers.accept !== "string") {
-            headers.accept = EventStreamContentType;
+        if (typeof headers.get("accept") !== "string") {
+            headers.set("accept", EventStreamContentType);
         }
         if (typeof this.lastEventId === "string") {
-            headers[LastEventIdHeader] = this.lastEventId;
+            headers.set(LastEventIdHeader, this.lastEventId);
         }
         const finalOptions: FetchOptions<"stream"> = {
             ...this.options,
@@ -119,13 +124,13 @@ export class EventSourcePlus {
             onResponseError: async (context) => {
                 if (abortSignal.aborted) return;
                 if (isAbortError(context.error)) return;
-                await hooks.onResponseError?.(context);
-                if (context.error instanceof Error) {
-                    throw context.error;
+                if (typeof context.error === "undefined") {
+                    context.error = new FetchError(
+                        `${context.response.status} ${context.response.statusText}`,
+                    );
                 }
-                throw new Error(
-                    `Received { STATUS_CODE: ${context.response.status} STATUS_TEXT: ${context.response.statusText} }`,
-                );
+                await hooks.onResponseError?.(context);
+                throw context.error;
             },
         };
         try {
@@ -217,12 +222,13 @@ export type EventSourcePlusAbortEvent = {
 };
 
 export class EventSourceController {
+    didAbort = false;
+
     /**
      * Do not modify. For internal use.
      */
     _abortController: AbortController;
     private _connect?: (hooks?: EventSourceHooks) => Promise<void> | void;
-    private _didAbort = false;
 
     constructor(
         controller?: AbortController,
@@ -237,7 +243,7 @@ export class EventSourceController {
     }
 
     reconnect(hooks?: EventSourceHooks) {
-        this._didAbort = false;
+        this.didAbort = false;
         this._abortController.abort();
         this._abortController = new AbortController();
         void this._connect?.(hooks);
@@ -246,8 +252,8 @@ export class EventSourceController {
     private _abortHook?: (event: EventSourcePlusAbortEvent) => any;
 
     _emitEvent(e: EventSourcePlusAbortEvent) {
-        if (this._didAbort) return;
-        this._didAbort = true;
+        if (this.didAbort) return;
+        this.didAbort = true;
         this._abortHook?.(e);
         this._abortController.abort(e.reason);
     }
@@ -363,6 +369,13 @@ export async function _handleResponse(
     if (typeof hooks.onResponse === "function") {
         await hooks.onResponse(context as OnResponseContext);
     }
+
+    if (!context.response.ok) {
+        // do nothing. ofetch will trigger the onResponseError hook
+        return;
+    }
+
+    // emit an error if we don't receive the expected `text/event-stream` content-type
     const contentType = context.response.headers.get("Content-Type");
     if (
         typeof contentType !== "string" ||
@@ -373,7 +386,7 @@ export async function _handleResponse(
         );
         context.error = error;
         if (typeof hooks.onResponseError === "function") {
-            hooks.onResponseError(context as OnResponseErrorContext);
+            await hooks.onResponseError(context as OnResponseErrorContext);
         }
         throw error;
     }

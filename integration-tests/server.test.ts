@@ -1,7 +1,7 @@
 import assert from "node:assert";
 
 import { randomUUID } from "crypto";
-import { Fetch } from "ofetch";
+import { Fetch, FetchError } from "ofetch";
 import { describe, expect, it, test } from "vitest";
 
 import {
@@ -182,19 +182,38 @@ test("post request 500", async () => {
     let resErrorCount = 0;
     const statusCodes: number[] = [];
     const statusMessages: string[] = [];
-    const controller = eventSource.listen({
-        onMessage() {},
-        onResponse() {
-            resCount++;
-        },
-        onResponseError(context) {
-            statusCodes.push(context.response.status);
-            statusMessages.push(context.response.statusText);
-            resErrorCount++;
-        },
+    await new Promise((res, rej) => {
+        const controller = eventSource.listen({
+            onMessage() {},
+            onResponse() {
+                resCount++;
+            },
+            async onResponseError(context) {
+                console.log(context.error);
+                resErrorCount++;
+                if (!(context.error instanceof FetchError)) {
+                    rej("expected context.error to be instance of FetchError");
+                    controller.abort();
+                    return;
+                }
+                statusCodes.push(context.response.status);
+                statusMessages.push(context.response.statusText);
+                const body = await context.response.json();
+                if (typeof body !== "object") {
+                    rej("expected body to be object");
+                    controller.abort();
+                }
+                if (body.statusCode !== 500) {
+                    rej("expected body.statusCode to be 500");
+                    controller.abort();
+                }
+                if (resErrorCount >= 2) {
+                    res(undefined);
+                    controller.abort();
+                }
+            },
+        });
     });
-    await wait(1000);
-    controller.abort();
     expect(resCount).toBe(2);
     expect(resErrorCount).toBe(2);
     expect(statusCodes).toStrictEqual([500, 500]);
@@ -207,25 +226,30 @@ test("request error(s)", async () => {
     // cspell:enable
     let reqCount = 0;
     let reqErrorCount = 0;
+    let controller: EventSourceController;
     await new Promise((res, rej) => {
         setTimeout(() => rej(), 2000);
-        const controller = eventSource.listen({
+        controller = eventSource.listen({
             onMessage() {
                 rej("Expected no messages");
             },
             onRequest() {
                 reqCount++;
             },
-            onResponse() {
-                rej("Expected no responses");
-            },
-            onRequestError() {
+            onRequestError({ error }) {
                 reqErrorCount++;
                 if (reqErrorCount >= 4) controller.abort();
+                if (typeof error !== "object") {
+                    rej("expected error to be in context");
+                }
+            },
+            onResponse() {
+                rej("Expected no responses");
             },
         });
         controller.onAbort(() => res(undefined));
     });
+    if (!controller!.didAbort) controller!.abort();
     expect(reqCount).toBe(reqErrorCount);
     expect(reqErrorCount).toBe(4);
 });
