@@ -42,8 +42,8 @@
     "devDependencies": {
         "@arrirpc/schema": "^0.80.3",
         "@eslint/js": "^9.39.1",
-        "@types/node": "^22.19.0",
-        "@vitest/coverage-v8": "^4.0.7",
+        "@types/node": "^22.19.1",
+        "@vitest/coverage-v8": "^4.0.10",
         "eslint": "^9.39.1",
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-simple-import-sort": "^12.1.1",
@@ -52,9 +52,9 @@
         "prettier": "^3.6.2",
         "start-server-and-test": "^2.1.2",
         "typescript": "~5.9.3",
-        "typescript-eslint": "^8.46.3",
+        "typescript-eslint": "^8.46.4",
         "unbuild": "^3.6.1",
-        "vitest": "^4.0.7"
+        "vitest": "^4.0.10"
     },
     "pnpm": {
         "onlyBuiltDependencies": [

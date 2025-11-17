@@ -189,7 +189,6 @@ test("post request 500", async () => {
                 resCount++;
             },
             async onResponseError(context) {
-                console.log(context.error);
                 resErrorCount++;
                 if (!(context.error instanceof FetchError)) {
                     rej("expected context.error to be instance of FetchError");
