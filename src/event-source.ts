@@ -102,6 +102,7 @@ export class EventSourcePlus {
         if (typeof this.lastEventId === "string") {
             headers.set(LastEventIdHeader, this.lastEventId);
         }
+        let ctx: OnResponseContext | undefined;
         const finalOptions: FetchOptions<"stream"> = {
             ...this.options,
             method: this.options.method ?? "get",
@@ -119,8 +120,10 @@ export class EventSourcePlus {
                 if (isAbortError(context.error)) return;
                 return hooks.onRequestError?.(context);
             },
-            onResponse: async (context) =>
-                _handleResponse(context as OnResponseContext, hooks),
+            onResponse: async (context) => {
+                ctx = context;
+                return _handleResponse(context as OnResponseContext, hooks);
+            },
             onResponseError: async (context) => {
                 if (abortSignal.aborted) return;
                 if (isAbortError(context.error)) return;
@@ -142,14 +145,24 @@ export class EventSourcePlus {
                     });
                 }, this.timeoutDurationMs);
             }
-            const result = await this.fetch(this.url, finalOptions);
+            const response = await this.fetch.raw(this.url, finalOptions);
             clearTimeout(this.timeout);
             this.timeout = undefined;
             this.retryCount = 0;
             this.retryInterval = 0;
             const decoder = new TextDecoder();
             let pendingData = "";
-            await getBytes(controller, result, (arr) => {
+            const stream = response.body;
+            if (!stream) {
+                const error = new Error(
+                    `Expected response body to contain ReadableStream`,
+                );
+                ctx!.response = response;
+                ctx!.error = error;
+                await hooks.onResponseError?.(ctx! as OnResponseErrorContext);
+                throw error;
+            }
+            await getBytes(controller, stream, (arr) => {
                 const text = pendingData + decoder.decode(arr);
                 const result = messageListFromString(text);
                 pendingData = result.leftoverData ?? "";
@@ -351,15 +364,15 @@ export interface EventSourceHooks {
     onResponseError?: (context: OnResponseErrorContext) => any;
 }
 
-export type OnRequestContext = FetchContext<unknown, "stream">;
-export type OnRequestErrorContext = FetchContext<unknown, "stream"> & {
+export type OnRequestContext = FetchContext<unknown>;
+export type OnRequestErrorContext = FetchContext<unknown> & {
     error: Error;
 };
-export type OnResponseContext = FetchContext<unknown, "stream"> & {
-    response: FetchResponse<"stream">;
+export type OnResponseContext = FetchContext<unknown> & {
+    response: FetchResponse<any>;
 };
-export type OnResponseErrorContext = FetchContext<any, "stream"> & {
-    response: FetchResponse<"stream">;
+export type OnResponseErrorContext = FetchContext<any> & {
+    response: FetchResponse<any>;
 };
 
 export async function _handleResponse(
