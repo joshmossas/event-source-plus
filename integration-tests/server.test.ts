@@ -928,6 +928,29 @@ describe("timeout parameter", { timeout: 10000 }, () => {
     );
 });
 
+test("handles partial characters", async () => {
+    const eventSource = new EventSourcePlus(
+        endpoint(ServerPaths.SseSendPartialCharacterChunks),
+        { method: "get", retryStrategy: "on-error" },
+    );
+    let result = "";
+    await new Promise((res, rej) => {
+        const controller = eventSource.listen({
+            onMessage(msg) {
+                result += msg.data;
+            },
+            onRequestError({ error }) {
+                rej(error);
+            },
+            onResponseError({ error }) {
+                rej(error);
+            },
+        });
+        controller.onAbort(() => res(undefined));
+    });
+    expect(result).toBe(`that's €5that's ¢50😀`);
+});
+
 // function promiseWithTimeout<T>(input: Promise<T>, timeout: number) {
 //     return Promise.race([
 //         new Promise((_, rej) => {

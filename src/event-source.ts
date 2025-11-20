@@ -163,7 +163,8 @@ export class EventSourcePlus {
                 throw error;
             }
             await getBytes(controller, stream, (arr) => {
-                const text = pendingData + decoder.decode(arr);
+                const text =
+                    pendingData + decoder.decode(arr, { stream: true });
                 const result = messageListFromString(text);
                 pendingData = result.leftoverData ?? "";
                 for (const message of result.messages) {
