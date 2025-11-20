@@ -8,7 +8,9 @@ import {
     getHeader,
     readBody,
     sendError,
+    sendStream,
     setResponseHeader,
+    setResponseHeaders,
     setResponseStatus,
     toNodeListener,
 } from "h3";
@@ -189,6 +191,46 @@ router.get(
         stream.onClosed(() => {
             clearInterval(interval);
         });
+    }),
+);
+
+router.get(
+    ServerPaths.SseSendPartialCharacterChunks,
+    eventHandler(async (event) => {
+        const { writable, readable } = new TransformStream();
+        const writer = writable.getWriter();
+        setResponseHeaders(event, {
+            "content-type": "text/event-stream; charset=utf-8",
+            "Cache-Control": "no-cache",
+            Connection: "keep-alive",
+        });
+        setResponseStatus(event, 200);
+        sendStream(event, readable);
+        const textEncoder = new TextEncoder();
+        const fullString = `
+data: that's €5
+
+data: that's ¢50
+
+event: message
+data: 😀
+
+`;
+        const byteArr = textEncoder.encode(fullString);
+        const fullLen = byteArr.length;
+        const euroStartIndex = byteArr.indexOf(0xe2);
+        const chunk1End = euroStartIndex + 1;
+        const chunk1 = byteArr.slice(0, chunk1End);
+        const grinStartIndex = byteArr.indexOf(0xf0);
+        const chunk2End = grinStartIndex + 2;
+        const chunk2 = byteArr.slice(chunk1End, chunk2End);
+        const chunk3 = byteArr.slice(chunk2End, fullLen);
+        await writer.write(chunk1); // send part of the euro
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        await writer.write(chunk2); // send rest of euro and send part of the emoji
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        await writer.write(chunk3); // send rest of emoji
+        await writer.close();
     }),
 );
 
