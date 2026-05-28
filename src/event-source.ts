@@ -1,14 +1,10 @@
+import { fetchWithHooks, FetchWithHooksOptions } from "./fetch-wrapper";
 import {
-    $Fetch,
-    createFetch,
-    Fetch,
-    type FetchContext,
-    FetchError,
-    type FetchOptions,
-    type FetchResponse,
-    ofetch,
-} from "ofetch";
-
+    Context,
+    EventSourceHooks,
+    OnResponseContext,
+    OnResponseErrorContext,
+} from "./hooks";
 import { wait } from "./internal";
 import { getBytes, messageListFromString, type SseMessage } from "./parse";
 
@@ -30,7 +26,7 @@ export class EventSourcePlus {
 
     maxRetryInterval: number;
 
-    fetch: $Fetch;
+    fetch: typeof globalThis.fetch;
 
     timeoutDurationMs: number | undefined;
     timeout: any;
@@ -40,7 +36,7 @@ export class EventSourcePlus {
         this.options = options;
         this.maxRetryCount = options.maxRetryCount;
         this.maxRetryInterval = options.maxRetryInterval ?? 30000;
-        this.fetch = createFetch({ fetch: options.fetch }) ?? ofetch;
+        this.fetch = options.fetch ?? fetch;
         this.timeoutDurationMs = options.timeout;
     }
 
@@ -102,17 +98,18 @@ export class EventSourcePlus {
         if (typeof this.lastEventId === "string") {
             headers.set(LastEventIdHeader, this.lastEventId);
         }
-        let ctx: OnResponseContext | undefined;
-        const finalOptions: FetchOptions<"stream"> = {
+        let ctx: Context = {
+            options: undefined,
+        };
+        const finalOptions: FetchWithHooksOptions = {
             ...this.options,
+            fetch: this.fetch,
             method: this.options.method ?? "get",
-            responseType: "stream",
             headers,
             signal: abortSignal,
-            retry: false,
             onRequest: (context) => {
                 if (controller.signal.aborted || abortSignal.aborted) return;
-                if (isAbortError(context.error)) return;
+                if (isAbortError((context as any).error)) return;
                 return hooks.onRequest?.(context);
             },
             onRequestError: async (context) => {
@@ -128,8 +125,8 @@ export class EventSourcePlus {
                 if (abortSignal.aborted) return;
                 if (isAbortError(context.error)) return;
                 if (typeof context.error === "undefined") {
-                    context.error = new FetchError(
-                        `${context.response.status} ${context.response.statusText}`,
+                    context.error = new Error(
+                        `FetchError: ${context.response.status} - ${context.response.statusText}`,
                     );
                 }
                 await hooks.onResponseError?.(context);
@@ -145,7 +142,7 @@ export class EventSourcePlus {
                     });
                 }, this.timeoutDurationMs);
             }
-            const response = await this.fetch.raw(this.url, finalOptions);
+            const response = await fetchWithHooks(this.url, finalOptions);
             clearTimeout(this.timeout);
             this.timeout = undefined;
             this.retryCount = 0;
@@ -174,7 +171,7 @@ export class EventSourcePlus {
                     ) {
                         this.lastEventId = message.id;
                     }
-                    hooks.onMessage(message);
+                    hooks.onMessage(message, ctx as any);
                 }
             });
         } catch (err) {
@@ -200,7 +197,7 @@ export class EventSourcePlus {
         return this._handleRetry(controller, hooks);
     }
 
-    listen(hooks: EventSourceHooks): EventSourceController {
+    listen(hooks: EventSourceHooks) {
         const controller = new EventSourceController(
             new AbortController(),
             (newHooks) => {
@@ -300,7 +297,7 @@ export interface EventSourcePlusOptions extends Omit<
     /**
      * Custom fetch implementation if you want to override
      */
-    fetch?: Fetch;
+    fetch?: typeof globalThis.fetch;
     /**
      * Max number of times EventSourcePlus will attempt to retry connecting. Will retry indefinitely when set to `undefined`. The retry count gets reset after successfully connecting.
      *
@@ -342,41 +339,9 @@ export const HTTP_METHOD_VALS = [
     "trace",
     "patch",
 ] as const;
-export type HttpMethod = (typeof HTTP_METHOD_VALS)[number];
-
-export interface EventSourceHooks {
-    /**
-     * Fires every time a new message is received
-     */
-    onMessage: (message: SseMessage) => any;
-    /**
-     * Fires when a new request has been created.
-     */
-    onRequest?: (context: OnRequestContext) => any;
-    /**
-     * Fires when a there was an error sending a request
-     */
-    onRequestError?: (context: OnRequestErrorContext) => any;
-    /**
-     * Fires when receiving a response from the server
-     */
-    onResponse?: (context: OnResponseContext) => any;
-    /**
-     * Fires when the server has returned an error status code or the server doesn't return the expected content-type ("text/event-stream")
-     */
-    onResponseError?: (context: OnResponseErrorContext) => any;
-}
-
-export type OnRequestContext = FetchContext<unknown>;
-export type OnRequestErrorContext = FetchContext<unknown> & {
-    error: Error;
-};
-export type OnResponseContext = FetchContext<unknown> & {
-    response: FetchResponse<any>;
-};
-export type OnResponseErrorContext = FetchContext<any> & {
-    response: FetchResponse<any>;
-};
+export type HttpMethod =
+    | (typeof HTTP_METHOD_VALS)[number]
+    | Uppercase<(typeof HTTP_METHOD_VALS)[number]>;
 
 export async function _handleResponse(
     context: OnResponseContext,
@@ -400,7 +365,7 @@ export async function _handleResponse(
         const error = new Error(
             `Expected server to response with Content-Type: '${EventStreamContentType}'. Got '${contentType}'`,
         );
-        context.error = error;
+        (context as any).error = error;
         if (typeof hooks.onResponseError === "function") {
             await hooks.onResponseError(context as OnResponseErrorContext);
         }

@@ -1,17 +1,14 @@
 import assert from "node:assert";
 
 import { randomUUID } from "crypto";
-import { Fetch, FetchError } from "ofetch";
 import { describe, expect, it, test } from "vitest";
 
-import {
-    EventSourceController,
-    type EventSourceHooks,
-    EventSourcePlus,
-} from "../src/event-source";
+import { EventSourceController, EventSourcePlus } from "../src/event-source";
 import { wait } from "../src/internal";
 import { type SseMessage } from "../src/parse";
 import { ServerPaths } from "./server-paths";
+import { EventSourceHooks } from "../src/hooks";
+import { FetchError } from "../src/fetch-wrapper";
 
 const urlHost = "localhost:2020";
 const urlProtocol = `http`;
@@ -236,6 +233,7 @@ test("request error(s)", async () => {
                 reqCount++;
             },
             onRequestError({ error }) {
+                console.log("ERROR: ", error);
                 reqErrorCount++;
                 if (reqErrorCount >= 4) controller.abort();
                 if (typeof error !== "object") {
@@ -457,7 +455,7 @@ test("Max retry count", async () => {
 
 test("Custom Fetch Injection", async () => {
     let usedCustomFetch = false;
-    const customFetch: Fetch = async (
+    const customFetch: typeof globalThis.fetch = async (
         input: string | URL | globalThis.Request,
         init?: RequestInit,
     ): Promise<Response> => {
