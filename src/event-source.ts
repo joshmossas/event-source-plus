@@ -283,8 +283,10 @@ export class EventSourceController {
 
 type HeaderMap = Record<string, string | undefined>;
 
-export interface EventSourcePlusOptions
-    extends Omit<RequestInit, "method" | "headers"> {
+export interface EventSourcePlusOptions extends Omit<
+    RequestInit,
+    "method" | "headers"
+> {
     /**
      * The request http method
      *
