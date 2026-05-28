@@ -30,7 +30,7 @@ export async function fetchWithHooks(
         });
     }
 
-    let context: Context = {
+    const context: Context = {
         options: options,
     };
 

@@ -4,11 +4,11 @@ import { randomUUID } from "crypto";
 import { describe, expect, it, test } from "vitest";
 
 import { EventSourceController, EventSourcePlus } from "../src/event-source";
+import { FetchError } from "../src/fetch-wrapper";
+import { EventSourceHooks } from "../src/hooks";
 import { wait } from "../src/internal";
 import { type SseMessage } from "../src/parse";
 import { ServerPaths } from "./server-paths";
-import { EventSourceHooks } from "../src/hooks";
-import { FetchError } from "../src/fetch-wrapper";
 
 const urlHost = "localhost:2020";
 const urlProtocol = `http`;

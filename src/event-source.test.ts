@@ -2,8 +2,8 @@ import { randomInt } from "crypto";
 import { assertType, test } from "vitest";
 
 import { _handleResponse, EventSourcePlusOptions } from "./event-source";
-import { wait } from "./internal";
 import { OnResponseContext } from "./hooks";
+import { wait } from "./internal";
 
 test("Header Type Inference", () => {
     type HeaderInput = EventSourcePlusOptions["headers"];

@@ -6,7 +6,7 @@ import {
     OnResponseErrorContext,
 } from "./hooks";
 import { wait } from "./internal";
-import { getBytes, messageListFromString, type SseMessage } from "./parse";
+import { getBytes, messageListFromString } from "./parse";
 
 export const EventStreamContentType = "text/event-stream";
 const LastEventIdHeader = "last-event-id";
