@@ -233,7 +233,6 @@ test("request error(s)", async () => {
                 reqCount++;
             },
             onRequestError({ error }) {
-                console.log("ERROR: ", error);
                 reqErrorCount++;
                 if (reqErrorCount >= 4) controller.abort();
                 if (typeof error !== "object") {

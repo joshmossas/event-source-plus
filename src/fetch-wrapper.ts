@@ -19,31 +19,50 @@ export async function fetchWithHooks(
     if (options.method) options.method = options.method.toUpperCase();
     const $fetch = options.fetch ?? fetch;
     let timeout: NodeJS.Timeout | undefined;
+    const controller = new AbortController();
+    const signal = options.signal;
+    if (signal) {
+        if (signal.aborted) {
+            controller.abort(signal.reason);
+        }
+        signal.addEventListener("abort", () => {
+            controller.abort(signal.reason);
+        });
+    }
+
     let context: Context = {
-        options: undefined,
+        options: options,
     };
-    if (options.timeout)
-        timeout = setTimeout(async () => {
-            context.error = new Error(
-                `Timeout of ${options.timeout}ms exceeded`,
-            );
-            await options.onResponseError?.(context as any);
-            throw context.error;
+
+    if (options.timeout) {
+        timeout = setTimeout(() => {
+            const error = new Error(`Timeout of ${options.timeout}ms exceeded`);
+            error.name = "AbortError";
+            controller.abort(error);
         }, options.timeout);
+    }
+
     let req: Request;
     try {
-        req = new Request(url, options);
-        context.request = req;
         await options.onRequest?.(context as any);
+        req = new Request(url, {
+            ...context.options,
+            signal: controller.signal,
+        });
+        context.request = req;
     } catch (err) {
         context.error = err instanceof Error ? err : new Error(`${err}`);
         if (timeout) clearTimeout(timeout);
-        await options.onResponseError?.(context as any);
-        throw err;
+        await options.onRequestError?.(context as any);
+        throw context.error;
     }
+
     let response: Response;
     try {
-        response = await $fetch(req, options);
+        response = await $fetch(req, {
+            ...context.options,
+            signal: controller.signal,
+        });
         if (timeout) clearTimeout(timeout);
         context.response = response;
         await options.onResponse?.(context as any);

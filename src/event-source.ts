@@ -76,17 +76,9 @@ export class EventSourcePlus {
         let headers: Headers;
         const abortSignal = controller._abortController.signal;
         if (typeof this.options.headers === "function") {
-            const result = this.options.headers();
-            if ("then" in result && typeof result.then === "function") {
-                headers = new Headers(
-                    (await result.then((data) => data)) as Record<
-                        string,
-                        string
-                    >,
-                );
-            } else {
-                headers = new Headers(result as Record<string, string>);
-            }
+            headers = new Headers(
+                (await this.options.headers()) as Record<string, string>,
+            );
         } else {
             headers = new Headers(
                 (this.options.headers as Record<string, string>) ?? {},
@@ -126,7 +118,7 @@ export class EventSourcePlus {
                 if (isAbortError(context.error)) return;
                 if (typeof context.error === "undefined") {
                     context.error = new Error(
-                        `FetchError: ${context.response.status} - ${context.response.statusText}`,
+                        `FetchError: ${context.response?.status} - ${context.response?.statusText}`,
                     );
                 }
                 await hooks.onResponseError?.(context);
@@ -217,7 +209,10 @@ export class EventSourcePlus {
 }
 
 function isAbortError(input: unknown) {
-    return input instanceof DOMException && input.name === "AbortError";
+    return (
+        (input instanceof DOMException && input.name === "AbortError") ||
+        (input instanceof Error && input.name === "AbortError")
+    );
 }
 
 export type EventSourcePlusAbortEvent = {

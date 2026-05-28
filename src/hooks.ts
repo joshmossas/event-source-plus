@@ -19,12 +19,12 @@ export type Context = {
 };
 
 export type OnRequestContext = {
-    request: Request;
+    request?: Request;
     options: any;
 };
 
 export type OnRequestErrorContext = {
-    request: Request;
+    request?: Request;
     options: any;
     error: Error;
 };
