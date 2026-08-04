@@ -1,8 +1,19 @@
 import { Context, EventSourceHooks } from "./hooks";
 
+type Timeout = ReturnType<typeof setTimeout>;
+
 export class FetchError extends Error {
-    constructor(statusCode: number, message: string) {
+    public statusCode: number;
+    public status: number;
+    public statusText: string;
+    public response?: Response;
+    constructor(statusCode: number, message: string, response?: Response) {
         super(`FetchError [${statusCode}]: ${message}`);
+        this.name = "FetchError";
+        this.statusCode = statusCode;
+        this.status = statusCode;
+        this.statusText = message;
+        this.response = response;
     }
 }
 
@@ -18,7 +29,7 @@ export async function fetchWithHooks(
 ): Promise<Response> {
     if (options.method) options.method = options.method.toUpperCase();
     const $fetch = options.fetch ?? fetch;
-    let timeout: NodeJS.Timeout | undefined;
+    let timeout: Timeout | undefined;
     const controller = new AbortController();
     const signal = options.signal;
     if (signal) {

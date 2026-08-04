@@ -189,7 +189,7 @@ export class EventSourcePlus {
         return this._handleRetry(controller, hooks);
     }
 
-    listen(hooks: EventSourceHooks) {
+    listen(hooks: EventSourceHooks): EventSourceController {
         const controller = new EventSourceController(
             new AbortController(),
             (newHooks) => {
