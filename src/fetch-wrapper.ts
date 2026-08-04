@@ -32,62 +32,77 @@ export async function fetchWithHooks(
     let timeout: Timeout | undefined;
     const controller = new AbortController();
     const signal = options.signal;
+
+    const abortHandler = () => {
+        controller.abort(signal?.reason);
+    };
+
     if (signal) {
         if (signal.aborted) {
             controller.abort(signal.reason);
         }
-        signal.addEventListener("abort", () => {
-            controller.abort(signal.reason);
-        });
+        signal.addEventListener("abort", abortHandler);
     }
 
-    const context: Context = {
-        options: options,
-    };
-
-    if (options.timeout) {
-        timeout = setTimeout(() => {
-            const error = new Error(`Timeout of ${options.timeout}ms exceeded`);
-            error.name = "AbortError";
-            controller.abort(error);
-        }, options.timeout);
-    }
-
-    let req: Request;
     try {
-        await options.onRequest?.(context as any);
-        req = new Request(url, {
-            ...context.options,
-            signal: controller.signal,
-        });
-        context.request = req;
-    } catch (err) {
-        context.error = err instanceof Error ? err : new Error(`${err}`);
-        if (timeout) clearTimeout(timeout);
-        await options.onRequestError?.(context as any);
-        throw context.error;
-    }
+        const context: Context = {
+            options: options,
+        };
 
-    let response: Response;
-    try {
-        response = await $fetch(req, {
-            ...context.options,
-            signal: controller.signal,
-        });
-        if (timeout) clearTimeout(timeout);
-        context.response = response;
-        await options.onResponse?.(context as any);
-    } catch (err) {
-        context.error = err instanceof Error ? err : new Error(`${err}`);
-        if (timeout) clearTimeout(timeout);
-        await options.onRequestError?.(context as any);
-        throw context.error;
+        if (options.timeout) {
+            timeout = setTimeout(() => {
+                const error = new Error(`Timeout of ${options.timeout}ms exceeded`);
+                error.name = "AbortError";
+                controller.abort(error);
+            }, options.timeout);
+        }
+
+        let req: Request;
+        try {
+            await options.onRequest?.(context as any);
+            req = new Request(url, {
+                ...context.options,
+                signal: controller.signal,
+            });
+            context.request = req;
+        } catch (err) {
+            context.error = err instanceof Error ? err : new Error(`${err}`);
+            if (timeout) clearTimeout(timeout);
+            await options.onRequestError?.(context as any);
+            throw context.error;
+        }
+
+        let response: Response;
+        try {
+            response = await $fetch(req, {
+                ...context.options,
+                signal: controller.signal,
+            });
+            if (timeout) clearTimeout(timeout);
+            context.response = response;
+        } catch (err) {
+            context.error = err instanceof Error ? err : new Error(`${err}`);
+            if (timeout) clearTimeout(timeout);
+            await options.onRequestError?.(context as any);
+            throw context.error;
+        }
+
+        try {
+            await options.onResponse?.(context as any);
+        } catch (err) {
+            context.error = err instanceof Error ? err : new Error(`${err}`);
+            throw context.error;
+        }
+
+        if (!response.ok) {
+            context.error = new FetchError(response.status, response.statusText, response);
+            await options.onResponseError?.(context as any);
+            throw context.error;
+        }
+        return response;
+    } finally {
+        if (signal) {
+            signal.removeEventListener("abort", abortHandler);
+        }
     }
-    if (!response.ok) {
-        context.error = new FetchError(response.status, response.statusText);
-        if (timeout) clearTimeout(timeout);
-        await options.onResponseError?.(context as any);
-        throw context.error;
-    }
-    return response;
 }
