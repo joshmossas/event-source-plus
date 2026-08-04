@@ -139,6 +139,13 @@ export class EventSourcePlus {
             this.timeout = undefined;
             this.retryCount = 0;
             this.retryInterval = 0;
+            if (response.status === 204) {
+                controller._emitEvent({
+                    type: "end-of-stream",
+                    reason: "Stream closed with status 204",
+                });
+                return;
+            }
             const decoder = new TextDecoder();
             let pendingData = "";
             const stream = response.body;
@@ -157,6 +164,9 @@ export class EventSourcePlus {
                 const result = messageListFromString(text);
                 pendingData = result.leftoverData ?? "";
                 for (const message of result.messages) {
+                    if (controller.signal.aborted || abortSignal.aborted) {
+                        break;
+                    }
                     if (
                         typeof message.id === "string" &&
                         message.id.length > 0
