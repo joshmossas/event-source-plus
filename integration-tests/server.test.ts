@@ -216,6 +216,45 @@ test("post request 500", async () => {
     expect(statusMessages).toStrictEqual(["Internal error", "Internal error"]);
 });
 
+test("request 204 No Content clean termination", async () => {
+    const eventSource = new EventSourcePlus(
+        endpoint(ServerPaths.Send204NoContent),
+        {
+            method: "get",
+            maxRetryCount: 1,
+        },
+    );
+    let openCount = 0;
+    let messageCount = 0;
+    let errorCount = 0;
+    let abortCount = 0;
+
+    await new Promise((res) => {
+        const controller = eventSource.listen({
+            onMessage() {
+                messageCount++;
+            },
+            onResponse() {
+                openCount++;
+            },
+            onResponseError() {
+                errorCount++;
+            },
+        });
+        controller.onAbort((event) => {
+            if (event.type === "end-of-stream") {
+                abortCount++;
+            }
+            res(undefined);
+        });
+    });
+
+    expect(openCount).toBe(1);
+    expect(messageCount).toBe(0);
+    expect(errorCount).toBe(0);
+    expect(abortCount).toBe(1);
+});
+
 test("request error(s)", async () => {
     // cspell:disable
     const eventSource = new EventSourcePlus("asldkfjasdflkjafdslkj");

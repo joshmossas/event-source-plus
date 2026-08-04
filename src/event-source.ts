@@ -356,6 +356,10 @@ export async function _handleResponse(
         await hooks.onResponse(context as OnResponseContext);
     }
 
+    if (context.response.status === 204) {
+        return;
+    }
+
     if (!context.response.ok) {
         // do nothing. ofetch will trigger the onResponseError hook
         return;

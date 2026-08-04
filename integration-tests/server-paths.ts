@@ -6,5 +6,6 @@ export const ServerPaths = {
     SseInvalidateHeaders: "/sse-invalidate-headers",
     SseSendPartialCharacterChunks: "/sse-send-partial-character-chunks",
     Send500Error: "/send-500-error",
+    Send204NoContent: "/send-204-no-content",
     TimeoutTest: "/sse-timeout-test",
 } as const;

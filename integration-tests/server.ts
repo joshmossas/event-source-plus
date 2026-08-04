@@ -179,6 +179,14 @@ router.post(
     }),
 );
 
+router.use(
+    ServerPaths.Send204NoContent,
+    eventHandler((event) => {
+        setResponseStatus(event, 204);
+        return "";
+    }),
+);
+
 router.get(
     ServerPaths.TimeoutTest,
     eventHandler(async (event) => {
