@@ -1,12 +1,8 @@
 import { randomInt } from "crypto";
-import { FetchResponse } from "ofetch";
 import { assertType, test } from "vitest";
 
-import {
-    _handleResponse,
-    EventSourcePlusOptions,
-    OnResponseContext,
-} from "./event-source";
+import { _handleResponse, EventSourcePlusOptions } from "./event-source";
+import { OnResponseContext } from "./hooks";
 import { wait } from "./internal";
 
 test("Header Type Inference", () => {
@@ -40,7 +36,7 @@ test("Header Type Inference", () => {
 test("onResponse passes with valid response", async () => {
     const headers = new Headers();
     headers.set("Content-Type", "text/event-stream");
-    const res: FetchResponse<any> = {
+    const res: Response = {
         headers: headers,
         ok: true,
         redirected: false,
@@ -84,7 +80,7 @@ test("onResponse passes with valid response", async () => {
 test.fails(
     "onResponse throws when Content-Type header is undefined",
     async () => {
-        const res: FetchResponse<any> = {
+        const res: Response = {
             headers: new Headers(),
             ok: true,
             redirected: false,

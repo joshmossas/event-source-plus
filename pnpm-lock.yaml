@@ -6,10 +6,6 @@ settings:
 
 importers:
     .:
-        dependencies:
-            ofetch:
-                specifier: ^1.5.1
-                version: 1.5.1
         devDependencies:
             "@arrirpc/schema":
                 specifier: ^0.82.0
@@ -1959,12 +1955,6 @@ packages:
                 integrity: sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==,
             }
 
-    node-fetch-native@1.6.7:
-        resolution:
-            {
-                integrity: sha512-g9yhqoedzIUm0nTnTqAQvueMPVOuIY16bqgAJJC8XOOubYFNwz6IER9qs0Gq2Xd0+CecCKFjtdDTMA4u4xG06Q==,
-            }
-
     node-mock-http@1.0.4:
         resolution:
             {
@@ -1982,12 +1972,6 @@ packages:
         resolution:
             {
                 integrity: sha512-uTqF9MuPraAQ+IsnPf366RG4cP9RtUi7MLO1N3KEc+wb0a6yKpeL0lmk2IB1jY5KHPAlTc6T/JRdC/YqxHNwkQ==,
-            }
-
-    ofetch@1.5.1:
-        resolution:
-            {
-                integrity: sha512-2W4oUZlVaqAPAil6FUg/difl6YhqhUR7x2eZY4bQCko22UXg3hptq9KLQdqFClV+Wu85UX7hNtdGTngi/1BxcA==,
             }
 
     onetime@5.1.2:
@@ -3508,8 +3492,6 @@ snapshots:
 
     natural-compare@1.4.0: {}
 
-    node-fetch-native@1.6.7: {}
-
     node-mock-http@1.0.4: {}
 
     npm-run-path@4.0.1:
@@ -3517,12 +3499,6 @@ snapshots:
             path-key: 3.1.1
 
     obug@2.1.1: {}
-
-    ofetch@1.5.1:
-        dependencies:
-            destr: 2.0.5
-            node-fetch-native: 1.6.7
-            ufo: 1.6.4
 
     onetime@5.1.2:
         dependencies:
