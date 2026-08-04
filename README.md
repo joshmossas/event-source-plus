@@ -1,6 +1,6 @@
 # Event Source Plus
 
-A more configurable EventSource implementation that runs in browsers, NodeJS, and workers. The default browser [EventSource API](https://developer.mozilla.org/en-US/docs/Web/API/EventSource) is too limited. Event Source Plus fixes that.
+A highly configurable Server-Sent Events (SSE) / `text/event-stream` client that runs in browsers, NodeJS, and workers. The default browser [EventSource API](https://developer.mozilla.org/en-US/docs/Web/API/EventSource) is too limited. Event Source Plus fixes that.
 
 ## Features
 
@@ -28,6 +28,7 @@ A more configurable EventSource implementation that runs in browsers, NodeJS, an
     - [Customizing Retry Behavior](#customizing-retry-behavior)
 - [Listen Hooks](#listen-hooks)
 - [Supported Browsers and Server Runtimes](#supported-browsers-and-server-runtimes)
+- [EventSourcePlus vs Native EventSource](#eventsourceplus-vs-native-eventsource)
 - [Contributing](#contributing)
 
 ## Installation
@@ -389,6 +390,38 @@ This means that you can use `EventSourcePlus` in any environment that supports t
 - NodeJS v16.5.0 or greater
     - _[node-fetch-native](https://www.npmjs.com/package/node-fetch-native) is used to backport `Fetch` to Node v16.5. In other cases the native Node `Fetch` implementation is used._
 - Any server runtime that also has support for these APIs
+
+## EventSourcePlus vs Native EventSource
+
+While this library aims to solve the shortcomings of the native `EventSource`, it intentionally does **not** share the same API. So do not assume there is overlap.
+
+### Native EventSource
+
+```ts
+const eventSource = new EventSource(url);
+eventSource.onmessage = (msg) => {
+    // do thing
+};
+eventSource.onopen = () => {
+    // do thing
+};
+eventSource.close();
+```
+
+### EventSourcePlus
+
+```ts
+const eventSource = new EventSourcePlus(url);
+const controller = eventSource.listen({
+    onMessage: (msg) => {
+        // do thing
+    },
+    onResponse: (ctx) => {
+        // do thing
+    },
+});
+controller.abort();
+```
 
 ## Contributing
 

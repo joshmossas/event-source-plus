@@ -1,0 +1,56 @@
+# Instructions for LLMs using event-source-plus
+
+**WARNING:** The `event-source-plus` library has a DIFFERENT API than the native browser `EventSource` class. Do NOT assume they share the same properties or methods.
+
+## Key Differences
+
+1.  **Initialization**:
+    Use `new EventSourcePlus(url, options)` instead of `new EventSource(url)`. The options object accepts standard `fetch` options (like `method`, `headers`, `body`).
+2.  **Listening to Events**:
+    Do NOT use `.onmessage`, `.addEventListener()`, or `.onerror`.
+    Instead, use the `listen()` method and pass an object with hooks (`onMessage`, `onRequest`, `onRequestError`, `onResponse`, `onResponseError`).
+    ```typescript
+    const eventSource = new EventSourcePlus("https://example.com");
+    const controller = eventSource.listen({
+        onMessage(message, context) {
+            console.log(message.data);
+            // message is of type SseMessage: { id?: string; event: string; data: string; retry?: number; }
+        },
+        onResponseError({ response }) {
+            console.error(response.status);
+        },
+    });
+    ```
+3.  **Controllers & Closing the Connection**:
+    The `.listen()` method returns an `EventSourceController` which provides `.abort()`, `.reconnect()`, and `.onAbort()`.
+    Do NOT use `eventSource.close()`. Use `controller.abort()` instead.
+
+## Full Example
+
+```typescript
+import { EventSourcePlus } from "event-source-plus";
+
+const eventSource = new EventSourcePlus("https://api.example.com/stream", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer token",
+    },
+    body: JSON.stringify({ prompt: "hello" }),
+    retryStrategy: "on-error", // extremely useful for LLM text streams
+});
+
+const controller = eventSource.listen({
+    onMessage(message) {
+        if (message.data === "[DONE]") {
+            controller.abort();
+            return;
+        }
+        const data = JSON.parse(message.data);
+        console.log(data.text);
+    },
+    onRequestError({ error }) {
+        console.error("Request Failed:", error);
+    },
+});
+```
